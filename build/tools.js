@@ -4,7 +4,7 @@ import { neonClient } from './index.js';
 import crypto from 'crypto';
 import { getMigrationFromMemory, persistMigrationToMemory } from './state.js';
 import { EndpointType, Provisioner } from '@neondatabase/api-client';
-import { DESCRIBE_DATABASE_STATEMENTS } from './utils.js';
+import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
 const NEON_ROLE_NAME = 'neondb_owner';
 export const NEON_TOOLS = [
     {
@@ -58,7 +58,7 @@ export const NEON_TOOLS = [
     },
     {
         name: 'run_sql',
-        description: 'Execute a SQL query against a Neon database',
+        description: 'Execute a single SQL statement against a Neon database',
         inputSchema: {
             type: 'object',
             properties: {
@@ -77,6 +77,33 @@ export const NEON_TOOLS = [
                 },
             },
             required: ['sql', 'databaseName', 'projectId'],
+        },
+    },
+    {
+        name: 'run_sql_transaction',
+        description: 'Execute a SQL transaction against a Neon database, should be used for multiple SQL statements',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                sqlStatements: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'The SQL statements to execute',
+                },
+                databaseName: {
+                    type: 'string',
+                    description: 'The name of the database to execute the query against',
+                },
+                projectId: {
+                    type: 'string',
+                    description: 'The ID of the project to execute the query against',
+                },
+                branchId: {
+                    type: 'string',
+                    description: 'An optional ID of the branch to execute the query against',
+                },
+            },
+            required: ['sqlStatements', 'databaseName', 'projectId'],
         },
     },
     {
@@ -155,9 +182,8 @@ export const NEON_TOOLS = [
 
       With that information, it must:
             1. Use 'run-sql' tool to verify changes on the temporary branch
-            2. If everything looks good, prompt the user to confirm the migration
-            3. Ask the users if he wants to commit this migration to the main branch using this migration ID: <migration_id> (show the migration ID in the prompt)
-            4. End chat here - don't commit the migration, only ask the user if he wants to commit it.
+            2. Ask the users if he wants to commit this migration to the main branch using this migration ID: <migration_id> (show the migration ID in the prompt)
+            3. End chat here - never commit the migration, only ask the user if he wants to commit it.
           `,
         inputSchema: {
             type: 'object',
@@ -283,6 +309,18 @@ async function handleRunSql({ sql, databaseName, projectId, branchId, }) {
     const response = await runQuery(sql);
     return response;
 }
+async function handleRunSqlTransaction({ sqlStatements, databaseName, projectId, branchId, }) {
+    log('Executing run_sql_transaction');
+    const connectionString = await neonClient.getConnectionUri({
+        projectId,
+        role_name: NEON_ROLE_NAME,
+        database_name: databaseName,
+        branch_id: branchId,
+    });
+    const runQuery = neon(connectionString.data.uri);
+    const response = await runQuery.transaction(sqlStatements.map((sql) => runQuery(sql)));
+    return response;
+}
 async function handleGetDatabaseTables({ projectId, databaseName, branchId, }) {
     log('Executing get_database_tables');
     const connectionString = await neonClient.getConnectionUri({
@@ -350,8 +388,8 @@ async function handleDeleteBranch({ projectId, branchId, }) {
 async function handleSchemaMigration({ migrationSql, databaseName, projectId, }) {
     log('Executing schema_migration');
     const newBranch = await handleCreateBranch({ projectId });
-    const result = await handleRunSql({
-        sql: migrationSql,
+    const result = await handleRunSqlTransaction({
+        sqlStatements: splitSqlStatements(migrationSql),
         databaseName,
         projectId,
         branchId: newBranch.branch.id,
@@ -374,8 +412,8 @@ async function handleCommitMigration({ migrationId }) {
     if (!migration) {
         throw new Error(`Migration not found: ${migrationId}`);
     }
-    const result = await handleRunSql({
-        sql: migration.migrationSql,
+    const result = await handleRunSqlTransaction({
+        sqlStatements: splitSqlStatements(migration.migrationSql),
         databaseName: migration.databaseName,
         projectId: migration.appliedBranch.project_id,
         branchId: migration.appliedBranch.parent_id,
@@ -474,6 +512,21 @@ export const NEON_HANDLERS = {
             .arguments;
         const result = await handleRunSql({
             sql,
+            databaseName,
+            projectId,
+            branchId,
+        });
+        return {
+            toolResult: {
+                content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+            },
+        };
+    },
+    run_sql_transaction: async (request) => {
+        const { sqlStatements, databaseName, projectId, branchId } = request.params
+            .arguments;
+        const result = await handleRunSqlTransaction({
+            sqlStatements,
             databaseName,
             projectId,
             branchId,

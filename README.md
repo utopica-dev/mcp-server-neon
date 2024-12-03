@@ -36,6 +36,7 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 - `describe_branch`
 
 - `run_sql`
+- `run_sql_transaction`
 - `get_database_tables`
 - `describe_table_schema`
 

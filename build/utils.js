@@ -2,6 +2,9 @@ import { NEON_HANDLERS } from './tools.js';
 export const isNeonToolName = (name) => {
     return name in NEON_HANDLERS;
 };
+export const splitSqlStatements = (sql) => {
+    return sql.split(';').filter(Boolean);
+};
 export const DESCRIBE_DATABASE_STATEMENTS = [
     `
 CREATE OR REPLACE FUNCTION public.show_db_tree()

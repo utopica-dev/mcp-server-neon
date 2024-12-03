@@ -4,6 +4,10 @@ export const isNeonToolName = (name: string): name is NeonToolName => {
   return name in NEON_HANDLERS;
 };
 
+export const splitSqlStatements = (sql: string) => {
+  return sql.split(';').filter(Boolean);
+};
+
 export const DESCRIBE_DATABASE_STATEMENTS = [
   `
 CREATE OR REPLACE FUNCTION public.show_db_tree()
