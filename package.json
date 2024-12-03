@@ -3,19 +3,22 @@
   "version": "0.1.0",
   "description": "MCP server for interacting with Neon Management API and databases",
   "license": "MIT",
-  "author": "Neon",
+  "author": "Neon, Inc. (https://neon.tech/)",
+  "homepage": "https://github.com/neondatabase/mcp-server-neon/",
+  "bugs": "https://github.com/neondatabase/mcp-server-neon/issues",
   "type": "module",
+  "access": "public",
   "bin": {
-    "mcp-server-neon": "./build/index.js"
+    "mcp-server-neon": "./dist/index.js"
   },
   "files": [
-    "build"
+    "dist"
   ],
   "scripts": {
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -28,5 +31,8 @@
     "@types/node": "^20.11.24",
     "prettier": "^3.4.1",
     "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=16.17.0"
   }
 }
