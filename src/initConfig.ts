@@ -2,9 +2,23 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
 import chalk from 'chalk';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+);
+const claudeConfigPath = path.join(
+  os.homedir(),
+  'Library',
+  'Application Support',
+  'Claude',
+  'claude_desktop_config.json',
+);
 
 const MCP_NEON_SERVER = 'neon';
-const parseArgs = () => {
+
+export const parseArgs = () => {
   const args = process.argv;
   if (args.length === 0) {
     console.error(
@@ -13,26 +27,22 @@ const parseArgs = () => {
     process.exit(1);
   }
 
-  console.log('args', args);
+  if (args.length !== 4) {
+    console.error('Invalid number of arguments');
+    process.exit(1);
+  }
+
   return {
     executablePath: args[1],
-    neonApiKey: args[2],
+    command: args[2],
+    neonApiKey: args[3],
   };
 };
 
-export async function initClaudeConfig() {
-  const { executablePath, neonApiKey } = parseArgs();
-  const claudeConfigPath = path.join(
-    os.homedir(),
-    'Library',
-    'Application Support',
-    'Claude',
-    'claude_desktop_config.json',
-  );
-
+export async function handleInit(neonApiKey: string) {
   const neonConfig = {
     command: 'npx',
-    args: ['-y', '--no-cache', executablePath, neonApiKey],
+    args: ['-y', packageJson.name, 'start', neonApiKey],
   };
 
   const configDir = path.dirname(claudeConfigPath);
@@ -64,6 +74,8 @@ export async function initClaudeConfig() {
       'The Neon MCP server will start automatically the next time you open Claude.',
     ),
   );
+}
 
-  return { neonApiKey };
+export function handleStart() {
+  console.log('Starting MCP server...');
 }
