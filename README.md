@@ -1,70 +1,61 @@
-# mcp-server-neon MCP Server
+# Neon MCP Server
 
-MCP server for interacting with Neon Management API and databases
+Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Neon](https://neon.tech).
 
-This is a TypeScript-based MCP server that implements a simple notes system. It demonstrates core MCP concepts by providing:
+This lets you use Claude Desktop, or any MCP Client, to use natural language to accomplish things with Neon, e.g.:
 
-- Resources representing text notes with URIs and metadata
-- Tools for creating new notes
-- Prompts for generating summaries of notes
+- `Let's create a new Postgres database, and call it "my-database". Let's then create a table called users with the following columns: id, name, email, and password.`
+- `I want to run a migration on my project called "my-project" that alters the users table to add a new column called "created_at".`
+- `Can you give me a summary of all of my Neon projects and what data is in each one?`
 
-## Features
+# Claude Setup
 
-### Resources
-- List and access notes via `note://` URIs
-- Each note has a title, content and metadata
-- Plain text mime type for simple content access
+## Requirements
 
-### Tools
-- `create_note` - Create new text notes
-  - Takes title and content as required parameters
-  - Stores note in server state
+- Node.js
+- Claude Desktop
+- Neon API key - you can generate one through the Neon console. [Learn more](https://neon.tech/docs/manage/api-keys#create-an-api-key) or [click here](https://console.neon.tech/app/settings/api-keys) for quick access.
 
-### Prompts
-- `summarize_notes` - Generate a summary of all stored notes
-  - Includes all note contents as embedded resources
-  - Returns structured prompt for LLM summarization
+## How to use locally
 
-## Development
+1. Run `npx git@github.com:neondatabase/mcp-server-neon $NEON_API_KEY`
+2. Restart Claude Desktop
+3. You should now be able to try a simple command such as `List me all my Neon projects`
 
-Install dependencies:
+# Features
+
+## Supported Tools
+
+- `list_projects`
+- `describe_project`
+- `create_project`
+- `delete_project`
+
+- `create_branch`
+- `delete_branch`
+- `describe_branch`
+
+- `run_sql`
+- `get_database_tables`
+- `describe_table_schema`
+
+- `start_database_migration`
+- `commit_database_migration`
+
+## Migrations
+
+Migrations are a way to manage changes to your database schema over time. With the Neon MCP server, LLMs are empowered to do migrations safely with separate "Start" and "Commit" commands.
+
+The "Start" command accepts a migration and runs it in a new temporary branch. Upon returning, this command hints to the LLM that it should test the migration on this branch. The LLM can then run the "Commit" command to apply the migration to the original branch.
+
+# Development
+
+In the current project folder, run:
+
 ```bash
 npm install
-```
-
-Build the server:
-```bash
-npm run build
-```
-
-For development with auto-rebuild:
-```bash
 npm run watch
+npx ./ $NEON_API_KEY
 ```
 
-## Installation
-
-To use with Claude Desktop, add the server config:
-
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-neon": {
-      "command": "/path/to/mcp-server-neon/build/index.js"
-    }
-  }
-}
-```
-
-### Debugging
-
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
-
-```bash
-npm run inspector
-```
-
-The Inspector will provide a URL to access debugging tools in your browser.
+Then, **restart Claude** each time you want to test changes.
