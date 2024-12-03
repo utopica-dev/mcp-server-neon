@@ -46,9 +46,15 @@ export async function handleInit({
   executablePath: string;
   neonApiKey: string;
 }) {
+  // If the executable path is a local path to the dist/index.js file, use it directly
+  // Otherwise, use the name of the package to always load the latest version from remote
+  const serverPath = executablePath.includes('dist/index.js')
+    ? executablePath
+    : packageJson.name;
+
   const neonConfig = {
     command: 'npx',
-    args: ['-y', executablePath, 'start', neonApiKey],
+    args: ['-y', serverPath, 'start', neonApiKey],
   };
 
   const configDir = path.dirname(claudeConfigPath);
