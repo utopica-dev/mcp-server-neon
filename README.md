@@ -18,7 +18,7 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 
 ## How to use locally
 
-1. Run `npx git@github.com:neondatabase/mcp-server-neon $NEON_API_KEY`
+1. Run `npx @neondatabase/mcp-server-neon init $NEON_API_KEY`
 2. Restart Claude Desktop
 3. You should now be able to try a simple command such as `List me all my Neon projects`
 
