@@ -13,14 +13,17 @@ import { handleInit, handleStart, parseArgs } from './initConfig.js';
 import { createApiClient } from '@neondatabase/api-client';
 
 const commands = ['init', 'start'] as const;
-const { command, neonApiKey } = parseArgs();
+const { command, neonApiKey, executablePath } = parseArgs();
 if (!commands.includes(command as (typeof commands)[number])) {
   console.error(`Invalid command: ${command}`);
   process.exit(1);
 }
 
 if (command === 'init') {
-  await handleInit(neonApiKey);
+  await handleInit({
+    executablePath,
+    neonApiKey,
+  });
   process.exit(0);
 }
 

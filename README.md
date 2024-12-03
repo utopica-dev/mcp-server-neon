@@ -56,7 +56,7 @@ In the current project folder, run:
 ```bash
 npm install
 npm run watch
-npx ./ $NEON_API_KEY
+npx ./ init $NEON_API_KEY
 ```
 
 Then, **restart Claude** each time you want to test changes.

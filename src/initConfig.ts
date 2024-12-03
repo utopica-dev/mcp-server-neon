@@ -39,10 +39,16 @@ export const parseArgs = () => {
   };
 };
 
-export async function handleInit(neonApiKey: string) {
+export async function handleInit({
+  executablePath,
+  neonApiKey,
+}: {
+  executablePath: string;
+  neonApiKey: string;
+}) {
   const neonConfig = {
     command: 'npx',
-    args: ['-y', packageJson.name, 'start', neonApiKey],
+    args: ['-y', executablePath, 'start', neonApiKey],
   };
 
   const configDir = path.dirname(claudeConfigPath);
