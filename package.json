@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "prepare": "npm run build",
-    "watch": "tsc --watch",
+    "watch": "tsc-watch --onSuccess \"chmod 755 dist/index.js\"",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
     "format": "prettier --write ."
   },
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@types/node": "^20.11.24",
     "prettier": "^3.4.1",
+    "tsc-watch": "^6.2.1",
     "typescript": "^5.3.3"
   },
   "engines": {
