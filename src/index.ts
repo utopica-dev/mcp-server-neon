@@ -11,6 +11,7 @@ import { NEON_HANDLERS, NEON_TOOLS } from './tools.js';
 import { isNeonToolName } from './utils.js';
 import { handleInit, handleStart, parseArgs } from './initConfig.js';
 import { createApiClient } from '@neondatabase/api-client';
+import './polyfills.js';
 
 const commands = ['init', 'start'] as const;
 const { command, neonApiKey, executablePath } = parseArgs();

@@ -14,6 +14,14 @@ import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
 const NEON_ROLE_NAME = 'neondb_owner';
 export const NEON_TOOLS = [
   {
+    name: '__node_version' as const,
+    description: `Get the Node.js version used by the MCP server`,
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'list_projects' as const,
     description: `List all Neon projects in your account.`,
     inputSchema: {
@@ -559,6 +567,14 @@ async function handleDescribeBranch({
 }
 
 export const NEON_HANDLERS: ToolHandlers = {
+  __node_version: async (request) => {
+    return {
+      toolResult: {
+        content: [{ type: 'text', text: process.version }],
+      },
+    };
+  },
+
   list_projects: async (request) => {
     const projects = await handleListProjects();
     return {

@@ -12,7 +12,7 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 
 ## Requirements
 
-- Node.js
+- Node.js >= v18.0.0
 - Claude Desktop
 - Neon API key - you can generate one through the Neon console. [Learn more](https://neon.tech/docs/manage/api-keys#create-an-api-key) or [click here](https://console.neon.tech/app/settings/api-keys) for quick access.
 
