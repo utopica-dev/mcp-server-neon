@@ -1,6 +1,6 @@
 import {
   CallToolRequest,
-  Result,
+  CallToolResultSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { log } from 'console';
@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { getMigrationFromMemory, persistMigrationToMemory } from './state.js';
 import { EndpointType, Provisioner } from '@neondatabase/api-client';
 import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
+import { z } from 'zod';
 
 const NEON_ROLE_NAME = 'neondb_owner';
 export const NEON_TOOLS = [
@@ -278,8 +279,10 @@ export const NEON_TOOLS = [
   },
 ] satisfies Array<Tool>;
 export type NeonToolName = (typeof NEON_TOOLS)[number]['name'];
+
+export type ToolResult = z.infer<typeof CallToolResultSchema>;
 type ToolHandlers = {
-  [K in NeonToolName]: (request: CallToolRequest) => Promise<Result>;
+  [K in NeonToolName]: (request: CallToolRequest) => Promise<ToolResult>;
 };
 
 async function handleListProjects() {
@@ -567,59 +570,51 @@ async function handleDescribeBranch({
 }
 
 export const NEON_HANDLERS: ToolHandlers = {
-  __node_version: async (request) => {
-    return {
-      toolResult: {
-        content: [{ type: 'text', text: process.version }],
-      },
-    };
-  },
+  __node_version: async (request) => ({
+    content: [{ type: 'text', text: process.version }],
+  }),
 
   list_projects: async (request) => {
     const projects = await handleListProjects();
     return {
-      toolResult: {
-        content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }],
-      },
+      content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }],
     };
   },
+
   create_project: async (request) => {
     const { name } = request.params.arguments as { name?: string };
     const result = await handleCreateProject(name);
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: [
-              'Your Neon project is ready.',
-              `The project_id is "${result.project.id}"`,
-              `The branch name is "${result.branch.name}"`,
-              `There is one database available on this branch, called "${result.databases[0].name}",`,
-              'but you can create more databases using SQL commands.',
-            ].join('\n'),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: [
+            'Your Neon project is ready.',
+            `The project_id is "${result.project.id}"`,
+            `The branch name is "${result.branch.name}"`,
+            `There is one database available on this branch, called "${result.databases[0].name}",`,
+            'but you can create more databases using SQL commands.',
+          ].join('\n'),
+        },
+      ],
     };
   },
+
   delete_project: async (request) => {
     const { projectId } = request.params.arguments as { projectId: string };
     await handleDeleteProject(projectId);
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: [
-              'Project deleted successfully.',
-              `Project ID: ${projectId}`,
-            ].join('\n'),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: [
+            'Project deleted successfully.',
+            `Project ID: ${projectId}`,
+          ].join('\n'),
+        },
+      ],
     };
   },
   describe_project: async (request) => {
@@ -627,22 +622,20 @@ export const NEON_HANDLERS: ToolHandlers = {
     const result = await handleDescribeProject(projectId);
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: [
-              `This project is called ${result.project.project.name}.`,
-            ].join('\n'),
-          },
-          {
-            type: 'text',
-            text: [
-              `It contains the following branches (use the describe branch tool to learn more about each branch): ${JSON.stringify(result.branches, null, 2)}`,
-            ].join('\n'),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: [`This project is called ${result.project.project.name}.`].join(
+            '\n',
+          ),
+        },
+        {
+          type: 'text',
+          text: [
+            `It contains the following branches (use the describe branch tool to learn more about each branch): ${JSON.stringify(result.branches, null, 2)}`,
+          ].join('\n'),
+        },
+      ],
     };
   },
   run_sql: async (request) => {
@@ -660,9 +653,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       branchId,
     });
     return {
-      toolResult: {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      },
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
   run_sql_transaction: async (request) => {
@@ -681,9 +672,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     });
 
     return {
-      toolResult: {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      },
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
   describe_table_schema: async (request) => {
@@ -701,9 +690,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       branchId,
     });
     return {
-      toolResult: {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      },
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
   get_database_tables: async (request) => {
@@ -719,14 +706,12 @@ export const NEON_HANDLERS: ToolHandlers = {
     });
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
     };
   },
   create_branch: async (request) => {
@@ -741,20 +726,18 @@ export const NEON_HANDLERS: ToolHandlers = {
     });
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: [
-              'Branch created successfully.',
-              `Project ID: ${result.branch.project_id}`,
-              `Branch ID: ${result.branch.id}`,
-              `Branch name: ${result.branch.name}`,
-              `Parent branch: ${result.branch.parent_id}`,
-            ].join('\n'),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: [
+            'Branch created successfully.',
+            `Project ID: ${result.branch.project_id}`,
+            `Branch ID: ${result.branch.id}`,
+            `Branch name: ${result.branch.name}`,
+            `Parent branch: ${result.branch.parent_id}`,
+          ].join('\n'),
+        },
+      ],
     };
   },
   start_database_migration: async (request) => {
@@ -772,20 +755,18 @@ export const NEON_HANDLERS: ToolHandlers = {
     });
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: `
+      content: [
+        {
+          type: 'text',
+          text: `
             Migration Details:
               - Migration ID: ${result.migrationId}
               - Temporary Branch Name: ${result.branch.name}
               - Temporary Branch ID: ${result.branch.id}
               - Migration Result: ${JSON.stringify(result.migrationResult, null, 2)}
             `,
-          },
-        ],
-      },
+        },
+      ],
     };
   },
   commit_database_migration: async (request) => {
@@ -793,21 +774,19 @@ export const NEON_HANDLERS: ToolHandlers = {
     const result = await handleCommitMigration({ migrationId });
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: `Result: ${JSON.stringify(
-              {
-                deletedBranch: result.deletedBranch,
-                migrationResult: result.migrationResult,
-              },
-              null,
-              2,
-            )}`,
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: `Result: ${JSON.stringify(
+            {
+              deletedBranch: result.deletedBranch,
+              migrationResult: result.migrationResult,
+            },
+            null,
+            2,
+          )}`,
+        },
+      ],
     };
   },
   describe_branch: async (request) => {
@@ -824,16 +803,14 @@ export const NEON_HANDLERS: ToolHandlers = {
     });
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: ['Database Structure:', JSON.stringify(result, null, 2)].join(
-              '\n',
-            ),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: ['Database Structure:', JSON.stringify(result, null, 2)].join(
+            '\n',
+          ),
+        },
+      ],
     };
   },
   delete_branch: async (request) => {
@@ -848,18 +825,16 @@ export const NEON_HANDLERS: ToolHandlers = {
     });
 
     return {
-      toolResult: {
-        content: [
-          {
-            type: 'text',
-            text: [
-              'Branch deleted successfully.',
-              `Project ID: ${projectId}`,
-              `Branch ID: ${branchId}`,
-            ].join('\n'),
-          },
-        ],
-      },
+      content: [
+        {
+          type: 'text',
+          text: [
+            'Branch deleted successfully.',
+            `Project ID: ${projectId}`,
+            `Branch ID: ${branchId}`,
+          ].join('\n'),
+        },
+      ],
     };
   },
 };
