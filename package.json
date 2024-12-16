@@ -22,7 +22,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "0.6.0",
+    "@modelcontextprotocol/sdk": "1.0.3",
     "@neondatabase/api-client": "^1.10.3",
     "@neondatabase/serverless": "^0.10.4",
     "chalk": "^5.3.0",
