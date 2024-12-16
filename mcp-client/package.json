@@ -1,0 +1,36 @@
+{
+  "name": "@neondatabase/mcp-client-cli",
+  "version": "0.1.0",
+  "description": "MCP client CLI for interacting with a MCP server",
+  "type": "module",
+  "access": "public",
+  "homepage": "https://github.com/neondatabase/mcp-server-neon/",
+  "bugs": "https://github.com/neondatabase/mcp-server-neon/issues",
+  "bin": {
+    "mcp-client-cli": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start:mcp-server-neon": "cd .. && bun run build && cd - && bun ./src/neon-cli-client.ts",
+    "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc-watch --onSuccess \"chmod 755 dist/index.js\"",
+    "format": "prettier --write ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@modelcontextprotocol/sdk": "^1.0.3",
+    "chalk": "^5.3.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "tsc-watch": "^6.2.1",
+    "@types/node": "^22.10.2",
+    "bun": "^1.1.38",
+    "typescript": "^5.7.2"
+  }
+}
