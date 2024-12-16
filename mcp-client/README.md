@@ -7,5 +7,6 @@ It is used to interact with the MCP server and the tools available.
 ## How to use
 
 1. Clone the repository
-2. Run `npm install`
-3. Run `npm run start:mcp-server-neon`
+2. Setup a `.env` file based on the `.env.example` file
+3. Run `npm install`
+4. Run `npm run start:mcp-server-neon`
