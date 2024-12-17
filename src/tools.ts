@@ -333,7 +333,9 @@ async function handleDeleteProject(projectId: string) {
 
 async function handleDescribeProject(projectId: string) {
   log('Executing describe_project');
-  const projectBranches = await neonClient.listProjectBranches(projectId);
+  const projectBranches = await neonClient.listProjectBranches({
+    projectId: projectId,
+  });
   const projectDetails = await neonClient.getProject(projectId);
   if (projectBranches.status !== 200) {
     throw new Error(
@@ -480,7 +482,7 @@ async function handleCreateBranch({
         type: EndpointType.ReadWrite,
         autoscaling_limit_min_cu: 0.25,
         autoscaling_limit_max_cu: 0.25,
-        provisioner: Provisioner.K8SNeonvm,
+        provisioner: 'k8s-neonvm',
       },
     ],
   });
