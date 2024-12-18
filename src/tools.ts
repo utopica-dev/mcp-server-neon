@@ -8,7 +8,7 @@ import { neon } from '@neondatabase/serverless';
 import { neonClient } from './index.js';
 import crypto from 'crypto';
 import { getMigrationFromMemory, persistMigrationToMemory } from './state.js';
-import { EndpointType, Provisioner } from '@neondatabase/api-client';
+import { EndpointType, ListProjectsParams, Provisioner } from '@neondatabase/api-client';
 import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
 import { z } from 'zod';
 
@@ -27,7 +27,24 @@ export const NEON_TOOLS = [
     description: `List all Neon projects in your account.`,
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        cursor: {
+          type: 'string',
+          description: 'Specify the cursor value from the previous response to retrieve the next batch of projects.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Specify a value from 1 to 400 to limit number of projects in the response.',
+        },
+        search: {
+          type: 'string',
+          description: 'Search by project name or id. You can specify partial name or id values to filter results.',
+        },
+        orgId: {
+          type: 'string',
+          description: 'Search for projects by org_id.',
+        },
+      },
     },
   },
   {
@@ -285,9 +302,9 @@ type ToolHandlers = {
   [K in NeonToolName]: (request: CallToolRequest) => Promise<ToolResult>;
 };
 
-async function handleListProjects() {
+async function handleListProjects(params: ListProjectsParams) {
   log('Executing list_projects');
-  const response = await neonClient.listProjects({});
+  const response = await neonClient.listProjects(params);
   if (response.status !== 200) {
     throw new Error(`Failed to list projects: ${response.statusText}`);
   }
@@ -570,12 +587,26 @@ async function handleDescribeBranch({
 }
 
 export const NEON_HANDLERS: ToolHandlers = {
+  // for debugging reasons.
   __node_version: async (request) => ({
     content: [{ type: 'text', text: process.version }],
   }),
 
   list_projects: async (request) => {
-    const projects = await handleListProjects();
+    const { cursor, limit, search, orgId } = request.params.arguments as {
+      cursor?: string;
+      limit?: number;
+      search?: string;
+      orgId?: string;
+    };
+
+    const projects = await handleListProjects({
+      cursor,
+      limit,
+      search,
+      org_id: orgId,
+    });
+
     return {
       content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }],
     };
@@ -617,6 +648,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   describe_project: async (request) => {
     const { projectId } = request.params.arguments as { projectId: string };
     const result = await handleDescribeProject(projectId);
@@ -638,6 +670,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   run_sql: async (request) => {
     const { sql, databaseName, projectId, branchId } = request.params
       .arguments as {
@@ -656,6 +689,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
+
   run_sql_transaction: async (request) => {
     const { sqlStatements, databaseName, projectId, branchId } = request.params
       .arguments as {
@@ -675,6 +709,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
+
   describe_table_schema: async (request) => {
     const { tableName, databaseName, projectId, branchId } = request.params
       .arguments as {
@@ -693,6 +728,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
+
   get_database_tables: async (request) => {
     const { projectId, branchId, databaseName } = request.params.arguments as {
       projectId: string;
@@ -714,6 +750,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   create_branch: async (request) => {
     const { projectId, branchName } = request.params.arguments as {
       projectId: string;
@@ -740,6 +777,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   start_database_migration: async (request) => {
     const { migrationSql, databaseName, projectId } = request.params
       .arguments as {
@@ -769,6 +807,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   commit_database_migration: async (request) => {
     const { migrationId } = request.params.arguments as { migrationId: string };
     const result = await handleCommitMigration({ migrationId });
@@ -789,6 +828,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   describe_branch: async (request) => {
     const { projectId, branchId, databaseName } = request.params.arguments as {
       projectId: string;
@@ -813,6 +853,7 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+
   delete_branch: async (request) => {
     const { projectId, branchId } = request.params.arguments as {
       projectId: string;
