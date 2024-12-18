@@ -12,6 +12,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import chalk from 'chalk';
 import readline from 'readline/promises';
 import { Tool } from '@anthropic-ai/sdk/resources/index.mjs';
+import { Stream } from '@anthropic-ai/sdk/streaming.mjs';
 
 const EXIT_COMMAND = 'exit';
 
@@ -110,77 +111,115 @@ export class InteractiveCLI {
       .replace(/: "([^"]+)"/g, ': ' + chalk.green('"$1"'));
   }
 
+  private async processStream(
+    stream: Stream<Anthropic.Messages.RawMessageStreamEvent>,
+  ): Promise<void> {
+    let currentMessage = '';
+    let currentToolName = '';
+    let currentToolInputString = '';
+
+    process.stdout.write(styles.assistant);
+    for await (const chunk of stream) {
+      switch (chunk.type) {
+        case 'message_start':
+        case 'content_block_stop':
+          continue;
+
+        case 'content_block_start':
+          if (chunk.content_block?.type === 'tool_use') {
+            currentToolName = chunk.content_block.name;
+          }
+          break;
+
+        case 'content_block_delta':
+          if (chunk.delta.type === 'text_delta') {
+            process.stdout.write(chunk.delta.text);
+            currentMessage += chunk.delta.text;
+          } else if (chunk.delta.type === 'input_json_delta') {
+            if (currentToolName && chunk.delta.partial_json) {
+              currentToolInputString += chunk.delta.partial_json;
+            }
+          }
+          break;
+
+        case 'message_delta':
+          if (chunk.delta.stop_reason === 'tool_use') {
+            const toolArgs = currentToolInputString
+              ? JSON.parse(currentToolInputString)
+              : {};
+
+            console.log(this.formatToolCall(currentToolName, toolArgs));
+            const toolResult = await this.mcpClient.request(
+              {
+                method: 'tools/call',
+                params: {
+                  name: currentToolName,
+                  arguments: toolArgs,
+                },
+              },
+              CallToolResultSchema,
+            );
+
+            if (currentMessage) {
+              this.messages.push({
+                role: 'assistant',
+                content: currentMessage,
+              });
+            }
+
+            const formattedResult = this.formatJSON(
+              JSON.stringify(toolResult.content.flatMap((c) => c.text)),
+            );
+
+            this.messages.push({
+              role: 'user',
+              content: formattedResult,
+            });
+
+            const nextStream = await this.anthropicClient.messages.create({
+              messages: this.messages,
+              model: 'claude-3-5-sonnet-20241022',
+              max_tokens: 8192,
+              tools: this.tools,
+              stream: true,
+            });
+            await this.processStream(nextStream);
+          }
+          break;
+
+        case 'message_stop':
+          break;
+
+        default:
+          console.warn(
+            styles.warning(`Unknown event type: ${JSON.stringify(chunk)}`),
+          );
+      }
+    }
+  }
+
   private async processQuery(query: string) {
     try {
       this.messages.push({ role: 'user', content: query });
 
-      const response = await this.anthropicClient.messages.create({
+      const stream = await this.anthropicClient.messages.create({
         messages: this.messages,
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 8192,
         tools: this.tools,
+        stream: true,
       });
-
-      let final_text = [];
-
-      for (const content of response.content) {
-        if (content.type === 'text') {
-          process.stdout.write(styles.assistant + content.text);
-          final_text.push(content.text);
-        } else if (content.type === 'tool_use') {
-          const toolName = content.name;
-          const toolArgs = content.input;
-
-          console.log(this.formatToolCall(toolName, toolArgs));
-
-          const toolResult = await this.mcpClient.request(
-            {
-              method: 'tools/call',
-              params: {
-                name: toolName,
-                arguments: toolArgs,
-              },
-            },
-            CallToolResultSchema,
-          );
-
-          if (
-            content &&
-            'text' in content &&
-            typeof content.text === 'string'
-          ) {
-            this.messages.push({
-              role: 'assistant',
-              content: content.text,
-            });
-          }
-
-          const formattedResult = this.formatJSON(
-            JSON.stringify(toolResult.content[0].text),
-          );
-          this.messages.push({
-            role: 'user',
-            content: formattedResult,
-          });
-
-          const nextResponse = await this.anthropicClient.messages.create({
-            messages: this.messages,
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 8192,
-          });
-
-          if (nextResponse.content[0].type === 'text') {
-            process.stdout.write(
-              styles.assistant + nextResponse.content[0].text,
-            );
-            final_text.push(nextResponse.content[0].text);
-          }
-        }
-      }
-
-      return final_text.join('\n');
+      await this.processStream(stream);
     } catch (error) {
       console.error(styles.error('\nError during query processing:'), error);
+      if (error instanceof Error) {
+        process.stdout.write(
+          styles.assistant +
+            'I apologize, but I encountered an error: ' +
+            error.message +
+            '\n',
+        );
+      }
     }
   }
 
