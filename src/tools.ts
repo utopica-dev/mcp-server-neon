@@ -207,20 +207,48 @@ export const NEON_TOOLS = [
     },
   },
   {
-    name: 'start_database_migration' as const,
-    description: `Start a database migration, use this tool for any DDL changes to your database.
-      After the migration is applied, these information will be available:
-      
-      Migration Details:
-              - Migration ID
-              - Temporary Branch Name
-              - Temporary Branch ID
-              - Migration Result
+    name: 'prepare_database_migration' as const,
+    description: `
+  <workflow>
+    1. Creates a temporary branch
+    2. Applies the migration SQL in that branch
+    3. Returns migration details for verification
+  </workflow>
 
-      With that information, it must:
-            1. Use 'run-sql' tool to verify changes on the temporary branch
-            2. Ask the users if he wants to commit this migration to the main branch using this migration ID: <migration_id> (show the migration ID in the prompt)
-            3. End chat here - never commit the migration, only ask the user if he wants to commit it.
+  <important_notes>
+    After executing this tool, you MUST:
+    1. Test the migration in the temporary branch using the 'run_sql' tool
+    2. Ask for confirmation before proceeding
+    3. Use 'complete_database_migration' tool to apply changes to main branch
+  </important_notes>
+
+  <example>
+    For a migration like:
+    ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
+    
+    You should test it with:
+    SELECT column_name, data_type 
+    FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'last_login';
+    
+    You can use 'run_sql' to test the migration in the temporary branch that this
+    tool creates.
+  </example>
+
+  <return_data>
+    Migration Details:
+    - Migration ID (required for commit)
+    - Temporary Branch Name
+    - Temporary Branch ID
+    - Migration Result
+  </return_data>
+
+  <next_steps>
+    1. Use 'run_sql' to verify changes on temporary branch
+    2. Ask client: "Would you like to commit migration [migration_id] to main branch?"
+    3. If approved, use 'complete_database_migration' tool with the migration_id
+  </next_steps>
+
           `,
     inputSchema: {
       type: 'object',
@@ -242,7 +270,7 @@ export const NEON_TOOLS = [
     },
   },
   {
-    name: 'commit_database_migration' as const,
+    name: 'complete_database_migration' as const,
     description:
       'Commit a database migration when the user confirms the migration is ready to be applied to the main branch and notices the user that the temporary branch was deleted',
     inputSchema: {
@@ -778,7 +806,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  start_database_migration: async (request) => {
+  prepare_database_migration: async (request) => {
     const { migrationSql, databaseName, projectId } = request.params
       .arguments as {
       migrationSql: string;
@@ -797,18 +825,28 @@ export const NEON_HANDLERS: ToolHandlers = {
         {
           type: 'text',
           text: `
-            Migration Details:
-              - Migration ID: ${result.migrationId}
-              - Temporary Branch Name: ${result.branch.name}
-              - Temporary Branch ID: ${result.branch.id}
-              - Migration Result: ${JSON.stringify(result.migrationResult, null, 2)}
-            `,
+            <status>Migration created successfully in temporary branch</status>
+            <details>
+              <migration_id>${result.migrationId}</migration_id>
+              <temporary_branch>
+                <name>${result.branch.name}</name>
+                <id>${result.branch.id}</id>
+              </temporary_branch>
+            </details>
+            <execution_result>${JSON.stringify(result.migrationResult, null, 2)}</execution_result>
+
+            <next_actions>
+              1. Test this migration using 'run_sql' tool on branch '${result.branch.name}'
+              2. Verify the changes meet your requirements
+              3. If satisfied, use 'complete_database_migration' with migration_id: ${result.migrationId}
+            </next_actions>
+          `,
         },
       ],
     };
   },
 
-  commit_database_migration: async (request) => {
+  complete_database_migration: async (request) => {
     const { migrationId } = request.params.arguments as { migrationId: string };
     const result = await handleCommitMigration({ migrationId });
 
