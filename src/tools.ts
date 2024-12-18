@@ -209,6 +209,11 @@ export const NEON_TOOLS = [
   {
     name: 'prepare_database_migration' as const,
     description: `
+  <use_case>
+    This tool should be used to perform schema migrations such as creating
+    tables, adding columns, renaming columns or any other DDL changes.
+  </use_case>
+
   <workflow>
     1. Creates a temporary branch
     2. Applies the migration SQL in that branch
