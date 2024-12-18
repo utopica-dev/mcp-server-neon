@@ -8,7 +8,7 @@ import { neon } from '@neondatabase/serverless';
 import { neonClient } from './index.js';
 import crypto from 'crypto';
 import { getMigrationFromMemory, persistMigrationToMemory } from './state.js';
-import { EndpointType, ListProjectsParams, Provisioner } from '@neondatabase/api-client';
+import { EndpointType, ListProjectsParams } from '@neondatabase/api-client';
 import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
 import { z } from 'zod';
 
@@ -30,15 +30,18 @@ export const NEON_TOOLS = [
       properties: {
         cursor: {
           type: 'string',
-          description: 'Specify the cursor value from the previous response to retrieve the next batch of projects.',
+          description:
+            'Specify the cursor value from the previous response to retrieve the next batch of projects.',
         },
         limit: {
           type: 'number',
-          description: 'Specify a value from 1 to 400 to limit number of projects in the response.',
+          description:
+            'Specify a value from 1 to 400 to limit number of projects in the response.',
         },
         search: {
           type: 'string',
-          description: 'Search by project name or id. You can specify partial name or id values to filter results.',
+          description:
+            'Search by project name or id. You can specify partial name or id values to filter results.',
         },
         orgId: {
           type: 'string',
