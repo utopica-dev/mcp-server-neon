@@ -1,6 +1,6 @@
 {
   "name": "@neondatabase/mcp-client-cli",
-  "version": "0.1.0",
+  "version": "0.1.1-beta.0",
   "description": "MCP client CLI for interacting with a MCP server",
   "type": "module",
   "access": "public",
