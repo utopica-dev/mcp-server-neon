@@ -1,5 +1,8 @@
 # Neon MCP Server
 
+[![npm version](https://img.shields.io/npm/v/@neondatabase/mcp-server-neon)](https://www.npmjs.com/package/@neondatabase/mcp-server-neon)
+[![npm downloads](https://img.shields.io/npm/dt/@neondatabase/mcp-server-neon)](https://www.npmjs.com/package/@neondatabase/mcp-server-neon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![smithery badge](https://smithery.ai/badge/neon)](https://smithery.ai/protocol/neon)
 
 Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Neon](https://neon.tech).
@@ -50,8 +53,8 @@ npx -y @smithery/cli install neon --client claude
 - `get_database_tables`
 - `describe_table_schema`
 
-- `start_database_migration`
-- `commit_database_migration`
+- `prepare_database_migration`
+- `complete_database_migration`
 
 ## Migrations
 

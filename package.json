@@ -12,14 +12,16 @@
     "mcp-server-neon": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc-watch --onSuccess \"chmod 755 dist/index.js\"",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepublishOnly": "bun scripts/before-publish.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.0.3",
@@ -34,7 +36,8 @@
     "@types/node-fetch": "^2.6.12",
     "prettier": "^3.4.1",
     "tsc-watch": "^6.2.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "bun": "^1.1.38"
   },
   "engines": {
     "node": ">=18.0.0"
