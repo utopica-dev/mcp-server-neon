@@ -371,7 +371,7 @@ async function handleDeleteProject(projectId: string) {
 async function handleDescribeProject(projectId: string) {
   log('Executing describe_project');
   const projectBranches = await neonClient.listProjectBranches({
-    projectId
+    projectId: projectId,
   });
   const projectDetails = await neonClient.getProject(projectId);
   if (projectBranches.status !== 200) {
