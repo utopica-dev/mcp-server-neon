@@ -249,6 +249,7 @@ export const NEON_TOOLS = [
   </return_data>
 
   <next_steps>
+  After executing this tool, you MUST follow these steps:
     1. Use 'run_sql' to verify changes on temporary branch
     2. Ask client: "Would you like to commit migration [migration_id] to main branch?"
     3. If approved, use 'complete_database_migration' tool with the migration_id
@@ -277,7 +278,7 @@ export const NEON_TOOLS = [
   {
     name: 'complete_database_migration' as const,
     description:
-      'Commit a database migration when the user confirms the migration is ready to be applied to the main branch and notices the user that the temporary branch was deleted',
+      'Complete a database migration when the user confirms the migration is ready to be applied to the main branch. This tool also lets the client know that the temporary branch created by the prepare_database_migration tool has been deleted.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -841,6 +842,7 @@ export const NEON_HANDLERS: ToolHandlers = {
             <execution_result>${JSON.stringify(result.migrationResult, null, 2)}</execution_result>
 
             <next_actions>
+            You MUST follow these steps:
               1. Test this migration using 'run_sql' tool on branch '${result.branch.name}'
               2. Verify the changes meet your requirements
               3. If satisfied, use 'complete_database_migration' with migration_id: ${result.migrationId}
