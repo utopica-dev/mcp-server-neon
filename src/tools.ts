@@ -290,6 +290,31 @@ export const NEON_TOOLS = [
       required: ['migrationId'],
     },
   },
+  /*{
+    name: 'create_database_migration_file',
+    description: `Creates a database migration file.`
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'The ID of the project to create the branch in',
+        },
+        branchId: {
+          type: 'string',
+          description: 'An optional ID of the branch',
+        },
+        databaseName: {
+          type: 'string',
+          description: 'The name of the database',
+        },
+        migrationName: {
+          type: 'string',
+          description: 'The name of the migration',
+        },
+      }
+    },
+  },*/
   {
     name: 'describe_branch' as const,
     description:
@@ -330,6 +355,42 @@ export const NEON_TOOLS = [
       },
       required: ['projectId', 'branchId'],
     },
+  },
+
+  {
+    name: 'get_connection_string' as const,
+    description: 'Get the connection string (i.e., a database URI) for a Neon project/branch/endpoint/database',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        databaseName: {
+          type: 'string',
+          description: 'The name of the database to get the table schema from',
+        },
+        projectId: {
+          type: 'string',
+          description: 'The ID of the project to execute the query against',
+        },
+        branchId: {
+          type: 'string',
+          description:
+            "An optional ID of the branch to execute the query against. The project's default branch will be used if not provided",
+        },
+        roleName: {
+          type: 'string',
+          description: `The name of the role to get the connection string for. Use the ${NEON_ROLE_NAME} role if you are unsure which role to use.`,
+        },
+        endpointId: {
+          type: 'string',
+          description: 'Defaults to the read-write endpoint_id associated with the branch_id if not specified.'
+        },
+        pooled: {
+          type: 'boolean',
+          description: 'Whether to use a pooled connection',
+        },
+        required: ['projectId', 'databaseName', 'roleName'],
+      },
+    }
   },
 ] satisfies Array<Tool>;
 export type NeonToolName = (typeof NEON_TOOLS)[number]['name'];
@@ -878,6 +939,10 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
+  
+  /*create_database_migration_file: async (request) => {
+    
+  },*/
 
   describe_branch: async (request) => {
     const { projectId, branchId, databaseName } = request.params.arguments as {
@@ -923,6 +988,41 @@ export const NEON_HANDLERS: ToolHandlers = {
             'Branch deleted successfully.',
             `Project ID: ${projectId}`,
             `Branch ID: ${branchId}`,
+          ].join('\n'),
+        },
+      ],
+    };
+  },
+  
+  get_connection_string: async (request) => {
+    const { projectId, branchId, databaseName, roleName, pooled, endpointId } = request.params.arguments as {
+      projectId: string;
+      databaseName: string;
+      roleName: string;
+      branchId?: string;
+      pooled?: boolean;
+      endpointId?: string;
+    };
+
+    const response = await neonClient.getConnectionUri({
+      branch_id: branchId,
+      endpoint_id: endpointId,
+      database_name: databaseName,
+      role_name: roleName,
+      pooled: pooled,
+      projectId: projectId,
+    });
+
+    if (response.status !== 201) {
+      throw new Error(`Failed to create branch: ${response.statusText}`);
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: [
+            `Connection string: ${response.data.uri}`,
           ].join('\n'),
         },
       ],
