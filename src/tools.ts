@@ -11,7 +11,11 @@ import { getMigrationFromMemory, persistMigrationToMemory } from './state.js';
 import { EndpointType, ListProjectsParams } from '@neondatabase/api-client';
 import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
 import { z } from 'zod';
-import { applyMigrations, createNewMigration, listMigrations } from './migrations_core.js';
+import {
+  applyMigrations,
+  createNewMigration,
+  listMigrations,
+} from './migrations_core.js';
 
 const NEON_ROLE_NAME = 'neondb_owner';
 export const NEON_TOOLS = [
@@ -305,12 +309,12 @@ export const NEON_TOOLS = [
         migrationContent: {
           type: 'string',
           description: 'The SQL contents of the migration',
-        }
+        },
       },
       required: ['migrationName'],
     },
   },
-  
+
   {
     name: 'list_migrations',
     description: `Lists all the migrations that have been applied on a specific remote database URL, as well as any pending migration files that haven't been applied yet.`,
@@ -319,28 +323,73 @@ export const NEON_TOOLS = [
       properties: {
         databaseUrl: {
           type: 'string',
-          description: 'The connection string (i.e., database URI) to check for which migrations have been applied.',
-        }
+          description:
+            'The connection string (i.e., database URI) to check for which migrations have been applied.',
+        },
       },
       required: ['databaseUrl'],
     },
   },
-  
+
   {
     name: 'apply_migrations',
-    description: `Applies any pending forward migrations. There are forward migrations (typically just called migrations), and backwards migrations (known as rollbacks). This command finds the list of local migration files which haven't been applied o on a remote database yet, and executes them one by one in the order that they were created. For each migration, the client must be interrupted to decide whether to continue on to the next one or not.`,
+    description: `
+      <context>
+        There are forward migrations (typically just called migrations), and backwards migrations (known as rollbacks). This tool is used to apply the migration files which haven't been executed yet.
+      </context>
+      
+      <workflow>
+        This tool finds the list of local forward migration files which haven't been applied on a remote database yet, and executes them one by one in the order in which they were created.
+
+        After each pending migration is applied, the client must decide whether to continue with applying the rest of the migration or not.
+      </workflow>
+    `,
     inputSchema: {
       type: 'object',
       properties: {
         databaseUrl: {
           type: 'string',
-          description: 'The connection string (i.e., database URI) to check for which migrations have been applied.',
-        }
+          description:
+            'The connection string (i.e., database URI) to check for which migrations have been applied.',
+        },
       },
       required: ['databaseUrl'],
     },
   },
-  
+
+  {
+    name: 'apply_migrations_with_temporary_branch_strategy',
+    description: `
+      <context>
+        There are forward migrations (typically just called migrations), and backwards migrations (known as rollbacks). This tool is used to apply the migration files which haven't been executed yet. Each migration will be applied on a temporary branch first, and only then
+      </context>
+      
+      <workflow>
+        This tool finds the list of local forward migration files which haven't been applied on a remote database yet, and executes them one by one in the order in which they were created.
+
+        After each pending migration is applied, the client must decide whether to continue with applying the rest of the migration or not.
+      </workflow>
+    `,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'string',
+          description: 'The Neon project ID where to apply the migrations.',
+        },
+        branchName: {
+          type: 'string',
+          description: 'The Neon branch name where to apply the migrations.',
+        },
+        databaseName: {
+          type: 'string',
+          description: 'The database name where to apply the migrations.',
+        },
+      },
+      required: ['projectId', 'branchId', 'databaseName'],
+    },
+  },
+
   {
     name: 'describe_branch' as const,
     description:
@@ -385,7 +434,8 @@ export const NEON_TOOLS = [
 
   {
     name: 'get_connection_string' as const,
-    description: 'Get the connection string (i.e., a database URI) for a Neon project/branch/endpoint/database. Do not break down the  connection string into its parts - just give the full string to the client.',
+    description:
+      'Get the connection string (i.e., a database URI) for a Neon project/branch/endpoint/database. Do not break down the  connection string into its parts - just give the full string to the client.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -408,7 +458,8 @@ export const NEON_TOOLS = [
         },
         endpointId: {
           type: 'string',
-          description: 'Defaults to the read-write endpoint_id associated with the branch_id if not specified.'
+          description:
+            'Defaults to the read-write endpoint_id associated with the branch_id if not specified.',
         },
         pooled: {
           type: 'boolean',
@@ -417,7 +468,7 @@ export const NEON_TOOLS = [
       },
       required: ['projectId', 'databaseName', 'roleName'],
       // get me the connection string for projectId snowy-heart-68634093 databaseName neondb roleName neondb_owner
-    }
+    },
   },
 ] satisfies Array<Tool>;
 export type NeonToolName = (typeof NEON_TOOLS)[number]['name'];
@@ -966,86 +1017,99 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
-  
+
   create_database_migration_file: async (request) => {
     const { migrationName } = request.params.arguments as {
-      migrationName: string
+      migrationName: string;
     };
 
-    let message: any = "";
+    let messages: Array<string> = ['Migration created successfully.'];
     try {
       await createNewMigration({
         name: migrationName,
-        migrationsDir: "./neon-migrations/",
+        migrationsDir: './neon-migrations/',
         log: (msg) => {
-          message = msg;
+          messages.push(JSON.stringify(msg));
         },
       });
     } catch (err) {
-      message = err;
+      if (err instanceof Error) {
+        messages = [JSON.stringify(err.message)];
+      } else {
+        messages = [];
+      }
     }
-    
+
     return {
       content: [
         {
           type: 'text',
-          text: message,
+          text: messages.join('\n'),
         },
       ],
     };
   },
 
+  // call list_migrations for database_url='postgresql://neondb_owner:iZu3x7PoCUvM@ep-proud-darkness-a549rxqx-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require'
   list_migrations: async (request) => {
     const { databaseUrl } = request.params.arguments as {
-      databaseUrl: string
+      databaseUrl: string;
     };
 
-    let message: any = "";
+    let messages: Array<string> = [''];
     try {
       await listMigrations({
         dbUrl: databaseUrl,
-        migrationsDir: "./neon-migrations/",
+        migrationsDir: './neon-migrations/',
         log: (msg) => {
-          message = msg;
+          messages.push(JSON.stringify(msg));
         },
       });
     } catch (err) {
-      message = err;
+      if (err instanceof Error) {
+        messages = [JSON.stringify(err.message)];
+      } else {
+        messages = [];
+      }
     }
-    
+
     return {
       content: [
         {
           type: 'text',
-          text: message,
+          text: messages.join('\n'),
         },
       ],
     };
   },
-  
+
   apply_migrations: async (request) => {
     const { databaseUrl } = request.params.arguments as {
-      databaseUrl: string
+      databaseUrl: string;
     };
 
-    let message: any = "";
+    let messages: Array<string> = [''];
     try {
       await applyMigrations({
         dbUrl: databaseUrl,
-        migrationsDir: "./neon-migrations/",
+        migrationsDir: './neon-migrations/',
         log: (msg) => {
-          message = msg;
+          messages.push(JSON.stringify(msg));
         },
       });
     } catch (err) {
-      message = err;
+      if (err instanceof Error) {
+        messages = [JSON.stringify(err.message)];
+      } else {
+        messages = [];
+      }
     }
-    
+
     return {
       content: [
         {
           type: 'text',
-          text: message,
+          text: messages.join('\n'),
         },
       ],
     };
@@ -1100,16 +1164,17 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
-  
+
   get_connection_string: async (request) => {
-    const { projectId, branchId, databaseName, roleName, pooled, endpointId } = request.params.arguments as {
-      projectId: string;
-      databaseName: string;
-      roleName: string;
-      branchId?: string;
-      pooled?: boolean;
-      endpointId?: string;
-    };
+    const { projectId, branchId, databaseName, roleName, pooled, endpointId } =
+      request.params.arguments as {
+        projectId: string;
+        databaseName: string;
+        roleName: string;
+        branchId?: string;
+        pooled?: boolean;
+        endpointId?: string;
+      };
 
     const response = await neonClient.getConnectionUri({
       projectId: projectId,
@@ -1125,21 +1190,17 @@ export const NEON_HANDLERS: ToolHandlers = {
         content: [
           {
             type: 'text',
-            text: [
-              `An error occurred: ${response.statusText}`,
-            ].join('\n'),
+            text: [`An error occurred: ${response.statusText}`].join('\n'),
           },
         ],
       };
-  }
+    }
 
     return {
       content: [
         {
           type: 'text',
-          text: [
-            `Connection string: ${response.data.uri}`,
-          ].join('\n'),
+          text: [`Connection string: ${response.data.uri}`].join('\n'),
         },
       ],
     };

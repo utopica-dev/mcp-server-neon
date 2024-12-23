@@ -159,6 +159,7 @@ export class InteractiveCLI {
               },
               CallToolResultSchema,
             );
+            console.log("toolResult", toolResult);
 
             if (currentMessage) {
               this.messages.push({

@@ -32,13 +32,14 @@ export async function createNewMigration({
     const downFilepath = path.join(migrationsDir, downFilename);
 
     let upContent = '-- Write your migration SQL here\n';
-    if (!process.stdin.isTTY) {
-      upContent = await readStdin();
-    }
+    // if (!process.stdin.isTTY) {
+      // upContent = await readStdin();
+    // }
 
     await fs.writeFile(upFilepath, upContent);
     await fs.writeFile(downFilepath, '-- Write your down migration SQL here\n');
 
+    log({message:'Created new migration files:'});
     log({
       'Forward migration file': upFilepath,
       'Backward Migration File': downFilepath,
@@ -57,6 +58,7 @@ export async function createNewMigration({
     }
   }
 }
+
 type ApplyMigrationsOptions = {
   migrationsDir: string;
   dbUrl: string;
@@ -123,9 +125,9 @@ export async function applyMigrations({
     }
 
     if (migrationsToBeApplied.length > 0 && !tableExists.exists) {
+      await sql(`CREATE SCHEMA IF NOT EXISTS neon_migrations`);
+      
       await sql(`
-          CREATE SCHEMA IF NOT EXISTS neon_migrations
-  
           CREATE TABLE neon_migrations.migrations (
             id bigint GENERATED ALWAYS AS IDENTITY,
             hash text NOT NULL,
