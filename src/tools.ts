@@ -297,7 +297,7 @@ export const NEON_TOOLS = [
   },
 
   {
-    name: 'create_database_migration_file',
+    name: 'local_files_migrations_manager_create_new_migration',
     description: `Creates a database migration file.`,
     inputSchema: {
       type: 'object',
@@ -320,7 +320,7 @@ export const NEON_TOOLS = [
   },
 
   {
-    name: 'list_migrations',
+    name: 'local_files_migrations_manager_list_migrations',
     description: `Lists all the migrations that have been applied on a specific remote database URL, as well as any pending migration files that haven't been applied yet.`,
     inputSchema: {
       type: 'object',
@@ -336,7 +336,7 @@ export const NEON_TOOLS = [
   },
 
   {
-    name: 'apply_migrations',
+    name: 'local_files_migrations_manager_apply_migrations',
     description: `
       <context>
         There are forward migrations (typically just called migrations), and backwards migrations (known as rollbacks). This tool is used to apply the migration files which haven't been executed yet.
@@ -1022,7 +1022,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  create_database_migration_file: async (request) => {
+  local_files_migrations_manager_create_new_migration: async (request) => {
     const { migrationName, upMigrationContent, downMigrationContent } = request.params.arguments as {
       migrationName: string;
       upMigrationContent?: string;
@@ -1060,7 +1060,7 @@ export const NEON_HANDLERS: ToolHandlers = {
   },
 
   // call list_migrations for database_url='postgresql://neondb_owner:bojxUOnr3em4@ep-lively-flower-a5x6gieu.us-east-2.aws.neon.tech/neondb?sslmode=require'
-  list_migrations: async (request) => {
+  local_files_migrations_manager_list_migrations: async (request) => {
     const { databaseUrl } = request.params.arguments as {
       databaseUrl: string;
     };
@@ -1092,7 +1092,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  apply_migrations: async (request) => {
+  local_files_migrations_manager_apply_migrations: async (request) => {
     const { databaseUrl } = request.params.arguments as {
       databaseUrl: string;
     };
