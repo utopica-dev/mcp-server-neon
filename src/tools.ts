@@ -306,10 +306,14 @@ export const NEON_TOOLS = [
           type: 'string',
           description: 'The name of the migration',
         },
-        migrationContent: {
+        upMigrationContent: {
           type: 'string',
-          description: 'The SQL contents of the migration',
+          description: 'The SQL contents of the forward migration (this is commonly just referred to as the migration content)',
         },
+        downMigrationContent: {
+          type: 'string',
+          description: 'The SQL contents of the backward migration (this is commonly referred to as the rollback content)',
+        }
       },
       required: ['migrationName'],
     },
@@ -1019,8 +1023,10 @@ export const NEON_HANDLERS: ToolHandlers = {
   },
 
   create_database_migration_file: async (request) => {
-    const { migrationName } = request.params.arguments as {
+    const { migrationName, upMigrationContent, downMigrationContent } = request.params.arguments as {
       migrationName: string;
+      upMigrationContent?: string;
+      downMigrationContent?: string;
     };
 
     let messages: Array<string> = ['Migration created successfully.'];
@@ -1031,6 +1037,9 @@ export const NEON_HANDLERS: ToolHandlers = {
         log: (msg) => {
           messages.push(JSON.stringify(msg));
         },
+        processStdin: false,
+        upMigrationContent,
+        downMigrationContent,
       });
     } catch (err) {
       if (err instanceof Error) {
@@ -1050,7 +1059,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  // call list_migrations for database_url='postgresql://neondb_owner:iZu3x7PoCUvM@ep-proud-darkness-a549rxqx-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require'
+  // call list_migrations for database_url='postgresql://neondb_owner:bojxUOnr3em4@ep-lively-flower-a5x6gieu.us-east-2.aws.neon.tech/neondb?sslmode=require'
   list_migrations: async (request) => {
     const { databaseUrl } = request.params.arguments as {
       databaseUrl: string;

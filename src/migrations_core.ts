@@ -14,16 +14,70 @@ async function readStdin(): Promise<string> {
 type CreateMigrationOptions = {
   name: string;
   migrationsDir: string;
+  upMigrationContent?: string;
+  downMigrationContent?: string;
   log: MigrationLogger;
+  processStdin: boolean;
 };
 
 export async function createNewMigration({
   name,
   migrationsDir,
+  upMigrationContent = '-- Write your migration SQL here\n',
+  downMigrationContent = '-- Write your down migration SQL here\n',
   log,
+  processStdin,
 }: CreateMigrationOptions) {
+  // Validate migration name - only allow alphanumeric, dashes and underscores
+  const validNamePattern = /^[a-zA-Z0-9-_]+$/;
+  if (!validNamePattern.test(name)) {
+    log({
+      message: `Invalid migration name "${name}". Names can only contain letters, numbers, dashes and underscores.`,
+    });
+    return;
+  }
+
   try {
     await fs.mkdir(migrationsDir, { recursive: true });
+
+    // Read existing migration files
+    const files = await fs.readdir(migrationsDir);
+    const existingMigrationName = files.find(file => file.includes(`-${name}.`));
+    
+    if (existingMigrationName) {
+      log({
+        message: `Migration with name "${name}" already exists: ${existingMigrationName}`,
+      });
+      return;
+    }
+    
+        // Calculate hashes for new migration content
+        const upHash = createHash('sha256').update(upMigrationContent).digest('hex');
+        const downHash = createHash('sha256').update(downMigrationContent).digest('hex');
+    
+        // Check for duplicate content in existing migrations
+        for (const file of files) {
+          if (file.endsWith('.up.sql')) {
+            const existingUpContent = await fs.readFile(path.join(migrationsDir, file), 'utf-8');
+            const existingUpHash = createHash('sha256').update(existingUpContent).digest('hex');
+            if (existingUpHash === upHash) {
+              log({
+                message: `Duplicate migration content found: The up migration content matches existing file ${file}`,
+              });
+              return;
+            }
+    
+            const downFile = file.replace('.up.sql', '.down.sql');
+            const existingDownContent = await fs.readFile(path.join(migrationsDir, downFile), 'utf-8');
+            const existingDownHash = createHash('sha256').update(existingDownContent).digest('hex');
+            if (existingDownHash === downHash) {
+              log({
+                message: `Duplicate migration content found: The down migration content matches existing file ${downFile}`,
+              });
+              return;
+            }
+          }
+        }    
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const upFilename = `${timestamp}-${name}.up.sql`;
@@ -31,13 +85,13 @@ export async function createNewMigration({
     const upFilepath = path.join(migrationsDir, upFilename);
     const downFilepath = path.join(migrationsDir, downFilename);
 
-    let upContent = '-- Write your migration SQL here\n';
-    // if (!process.stdin.isTTY) {
-      // upContent = await readStdin();
-    // }
+    let upContent = upMigrationContent;
+    if (!process.stdin.isTTY && processStdin) {
+      upContent = await readStdin();
+    }
 
     await fs.writeFile(upFilepath, upContent);
-    await fs.writeFile(downFilepath, '-- Write your down migration SQL here\n');
+    await fs.writeFile(downFilepath, downMigrationContent);
 
     log({message:'Created new migration files:'});
     log({
@@ -225,6 +279,9 @@ export async function listMigrations({
         'utf-8',
       );
       const hash = createHash('sha256').update(content).digest('hex');
+      if (allMigrations.has(hash)) {
+        throw new Error(`Duplicate migration hash found: ${hash}`);
+      }
       localMigrationMap.set(hash, filename);
       allMigrations.add(hash);
     }
