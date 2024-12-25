@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.1.9-beta.0] - 2024-12-25
+- Added 3 new tools: `local_files_migrations_manager_create_new_migration`, `local_files_migrations_manager_list_migrations` and `local_files_migrations_manager_apply_migrations`
+
 ## [0.1.8] - 2024-12-25
 
 - Added `beforePublish` script so make sure the changelog is updated before publishing
