@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.1.9-beta.0] - 2024-12-25
-- Added 3 new tools: `local_files_migrations_manager_create_new_migration`, `local_files_migrations_manager_list_migrations` and `local_files_migrations_manager_apply_migrations`
+- Added 3 new tools: `local_migration_files_create`, `local_migration_files_list` and `local_migration_files_apply`
 
 ## [0.1.8] - 2024-12-25
 
