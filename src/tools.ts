@@ -297,7 +297,7 @@ export const NEON_TOOLS = [
   },
 
   {
-    name: 'local_files_migrations_manager_create_new_migration',
+    name: 'local_migration_files_create',
     description: `Creates a database migration file.`,
     inputSchema: {
       type: 'object',
@@ -320,7 +320,7 @@ export const NEON_TOOLS = [
   },
 
   {
-    name: 'local_files_migrations_manager_list_migrations',
+    name: 'local_migration_files_list',
     description: `Lists all the migrations that have been applied on a specific remote database URL, as well as any pending migration files that haven't been applied yet.`,
     inputSchema: {
       type: 'object',
@@ -336,7 +336,7 @@ export const NEON_TOOLS = [
   },
 
   {
-    name: 'local_files_migrations_manager_apply_migrations',
+    name: 'local_migration_files_apply',
     description: `
       <context>
         There are forward migrations (typically just called migrations), and backwards migrations (known as rollbacks). This tool is used to apply the migration files which haven't been executed yet.
@@ -358,39 +358,6 @@ export const NEON_TOOLS = [
         },
       },
       required: ['databaseUrl'],
-    },
-  },
-
-  {
-    name: 'apply_migrations_with_temporary_branch_strategy',
-    description: `
-      <context>
-        There are forward migrations (typically just called migrations), and backwards migrations (known as rollbacks). This tool is used to apply the migration files which haven't been executed yet. Each migration will be applied on a temporary branch first, and only then
-      </context>
-      
-      <workflow>
-        This tool finds the list of local forward migration files which haven't been applied on a remote database yet, and executes them one by one in the order in which they were created.
-
-        After each pending migration is applied, the client must decide whether to continue with applying the rest of the migration or not.
-      </workflow>
-    `,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The Neon project ID where to apply the migrations.',
-        },
-        branchName: {
-          type: 'string',
-          description: 'The Neon branch name where to apply the migrations.',
-        },
-        databaseName: {
-          type: 'string',
-          description: 'The database name where to apply the migrations.',
-        },
-      },
-      required: ['projectId', 'branchId', 'databaseName'],
     },
   },
 
@@ -1022,7 +989,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  local_files_migrations_manager_create_new_migration: async (request) => {
+  local_migration_files_create: async (request) => {
     const { migrationName, upMigrationContent, downMigrationContent } = request.params.arguments as {
       migrationName: string;
       upMigrationContent?: string;
@@ -1060,7 +1027,7 @@ export const NEON_HANDLERS: ToolHandlers = {
   },
 
   // call list_migrations for database_url='postgresql://neondb_owner:bojxUOnr3em4@ep-lively-flower-a5x6gieu.us-east-2.aws.neon.tech/neondb?sslmode=require'
-  local_files_migrations_manager_list_migrations: async (request) => {
+  local_migration_files_list: async (request) => {
     const { databaseUrl } = request.params.arguments as {
       databaseUrl: string;
     };
@@ -1092,7 +1059,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  local_files_migrations_manager_apply_migrations: async (request) => {
+  local_migration_files_apply: async (request) => {
     const { databaseUrl } = request.params.arguments as {
       databaseUrl: string;
     };
