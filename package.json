@@ -21,7 +21,8 @@
     "watch": "tsc-watch --onSuccess \"chmod 755 dist/index.js\"",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
     "format": "prettier --write .",
-    "prepublishOnly": "bun scripts/before-publish.ts"
+    "prepublishOnly": "bun scripts/before-publish.ts",
+    "test": "npx braintrust eval src/tools-evaluations"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.0.3",

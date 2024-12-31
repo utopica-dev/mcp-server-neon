@@ -278,14 +278,32 @@ export const NEON_TOOLS = [
       <response_instructions>
         <instructions>
           Provide a brief confirmation of the requested change and ask for migration commit approval.
+
+          You MUST include ALL of the following fields in your response:
+          - Migration ID (this is required for commit and must be shown first)  
+          - Temporary Branch Name (always include exact branch name)
+          - Temporary Branch ID (always include exact ID)
+          - Migration Result (include brief success/failure status)
+          
+          Even if some fields are missing from the tool's response, use placeholders like "not provided" rather than omitting fields.
         </instructions>
 
         <do_not_include>
-          DO NOT include technical details like:
-          - Column specifications
-          - Data types
-          - Constraint details
+          IMPORTANT: Your response MUST NOT contain ANY technical implementation details such as:
+          - Data types (e.g., DO NOT mention if a column is boolean, varchar, timestamp, etc.)
+          - Column specifications or properties
+          - SQL syntax or statements
+          - Constraint definitions or rules
           - Default values
+          - Index types
+          - Foreign key specifications
+          
+          Keep the response focused ONLY on confirming the high-level change and requesting approval.
+          
+          <example>
+            INCORRECT: "I've added a boolean is_published column to the posts table..."
+            CORRECT: "I've added the is_published column to the posts table..."
+          </example>
         </do_not_include>
 
         <example>
@@ -301,6 +319,22 @@ export const NEON_TOOLS = [
 
     3. If approved, use 'complete_database_migration' tool with the migration_id
   </next_steps>
+
+  <error_handling>
+    On error, the tool will:
+    1. Automatically attempt ONE retry of the exact same operation
+    2. If the retry fails:
+      - Terminate execution
+      - Return error details
+      - DO NOT attempt any other tools or alternatives
+    
+    Error response will include:
+    - Original error details
+    - Confirmation that retry was attempted
+    - Final error state
+    
+    Important: After a failed retry, you must terminate the current flow completely. Do not attempt to use alternative tools or workarounds.
+  </error_handling>
           `,
     inputSchema: {
       type: 'object',

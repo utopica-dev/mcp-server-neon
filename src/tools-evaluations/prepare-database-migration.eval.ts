@@ -2,7 +2,7 @@ import { Eval, EvalCase, Reporter, reportFailures } from 'braintrust';
 import { LLMClassifierFromTemplate } from 'autoevals';
 
 import { createApiClient } from '@neondatabase/api-client';
-import { evaluateTask } from './setup';
+import { deleteNonDefaultBranches, evaluateTask } from './evalUtils';
 
 const EVAL_INFO = {
   projectId: 'black-recipe-75251165',
@@ -49,9 +49,9 @@ Ignore the following differences:
 
 The submitted answer may either be:
 (A) A subset missing key factual information from the expert answer
-(B) A superset adding key factual information beyond the expert answer  
+(B) A superset that FIRST agrees with the expert answer's core facts AND THEN adds additional factual information  
 (C) Factually equivalent to the expert answer
-(D) In factual disagreement with the expert answer
+(D) In factual disagreement with or takes a completely different action than the expert answer
 (E) Different only in non-factual implementation details
 
 Select the most appropriate option, prioritizing the core factual content over implementation specifics.
@@ -74,10 +74,11 @@ const mainBranchIntegrityCheck = async (args: {
   expected: string;
   metadata?: {
     databaseSchemaBeforeRun: string;
+    databaseSchemaAfterRun: string;
   };
 }) => {
   const databaseSchemaBeforeRun = args.metadata?.databaseSchemaBeforeRun;
-  const databaseSchemaAfterRun = await getMainBranchDatabaseSchema();
+  const databaseSchemaAfterRun = args.metadata?.databaseSchemaAfterRun;
 
   const isSame = databaseSchemaBeforeRun === databaseSchemaAfterRun;
 
@@ -93,6 +94,7 @@ Eval('prepare_database_migration', {
     string,
     | {
         databaseSchemaBeforeRun: string;
+        databaseSchemaAfterRun: string;
       }
     | undefined
   >[] => {
@@ -230,9 +232,16 @@ Eval('prepare_database_migration', {
 
     const response = await evaluateTask(input);
 
-    return response.content;
+    const databaseSchemaAfterRun = await getMainBranchDatabaseSchema();
+    hooks.metadata.databaseSchemaAfterRun = databaseSchemaAfterRun;
+    hooks.metadata.response = response;
+
+    deleteNonDefaultBranches(EVAL_INFO.projectId);
+
+    const finalMessage = response[response.length - 1];
+    return finalMessage.content;
   },
-  trialCount: 1,
+  trialCount: 50,
   maxConcurrency: 2,
   scores: [factualityAnthropic, mainBranchIntegrityCheck],
 });
@@ -254,23 +263,7 @@ Reporter('Prepare Database Migration Reporter', {
 
   // cleanup branches after the run
   reportRun: async (evalReports) => {
-    const neonClient = createApiClient({
-      apiKey: process.env.NEON_API_KEY!,
-    });
-
-    const allBranches = await neonClient.listProjectBranches({
-      projectId: EVAL_INFO.projectId,
-    });
-
-    const branchesToDelete = allBranches.data.branches.filter(
-      (b) => !b.default,
-    );
-
-    await Promise.all(
-      branchesToDelete.map((b) =>
-        neonClient.deleteProjectBranch(b.project_id, b.id),
-      ),
-    );
+    await deleteNonDefaultBranches(EVAL_INFO.projectId);
 
     return evalReports.every((r) => r);
   },

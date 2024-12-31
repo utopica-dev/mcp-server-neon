@@ -31,7 +31,7 @@ export class MCPClient {
   private tools: Tool[] = [];
   private logger: Logger;
 
-  constructor(serverConfig: MCPClientOptions) {
+  constructor({ loggerOptions, ...serverConfig }: MCPClientOptions) {
     this.anthropicClient = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -42,7 +42,7 @@ export class MCPClient {
     );
 
     this.transport = new StdioClientTransport(serverConfig);
-    this.logger = new Logger(serverConfig.loggerOptions ?? { mode: 'verbose' });
+    this.logger = new Logger(loggerOptions ?? { mode: 'verbose' });
   }
 
   async start() {
