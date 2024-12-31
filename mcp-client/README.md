@@ -1,6 +1,8 @@
+<img width="250px" src="https://neon.tech/brand/neon-logo-dark-color.svg" />
+
 ## MCP Client CLI
 
-This is a CLI client that can be used to interact with any MCP server and its tools.
+This is a CLI client that can be used to interact with any MCP server and its tools. For more, see [Building a CLI Client For Model Context Protocol Servers](https://neon.tech/blog/building-a-cli-client-for-model-context-protocol-servers).
 
 ## Requirements
 
