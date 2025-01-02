@@ -241,15 +241,15 @@ Eval('prepare_database_migration', {
     const databaseSchemaBeforeRun = await getMainBranchDatabaseSchema();
     hooks.metadata.databaseSchemaBeforeRun = databaseSchemaBeforeRun;
 
-    const response = await evaluateTask(input);
+    const llmCallMessages = await evaluateTask(input);
 
     const databaseSchemaAfterRun = await getMainBranchDatabaseSchema();
     hooks.metadata.databaseSchemaAfterRun = databaseSchemaAfterRun;
-    hooks.metadata.response = response;
+    hooks.metadata.llmCallMessages = llmCallMessages;
 
     deleteNonDefaultBranches(EVAL_INFO.projectId);
 
-    const finalMessage = response[response.length - 1];
+    const finalMessage = llmCallMessages[llmCallMessages.length - 1];
     return finalMessage.content;
   },
   trialCount: 20,
