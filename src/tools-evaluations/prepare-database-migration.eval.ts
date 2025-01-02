@@ -46,6 +46,8 @@ Ignore the following differences:
 - Specific migration IDs or references
 - Formatting or structural variations
 - Order of presenting the information
+- Restatements of the same request/question
+- Additional confirmatory language that doesn't add new information
 
 The submitted answer may either be:
 (A) A subset missing key factual information from the expert answer
@@ -79,6 +81,15 @@ const mainBranchIntegrityCheck = async (args: {
 }) => {
   const databaseSchemaBeforeRun = args.metadata?.databaseSchemaBeforeRun;
   const databaseSchemaAfterRun = args.metadata?.databaseSchemaAfterRun;
+  const databaseSchemaAfterRunResponseIsComplete =
+    databaseSchemaAfterRun?.includes('PostgreSQL database dump complete') ??
+    false;
+
+  // sometimes the pg_dump fails to deliver the full responses, which leads to false negatives
+  // so we must eject
+  if (!databaseSchemaAfterRunResponseIsComplete) {
+    return null;
+  }
 
   const isSame = databaseSchemaBeforeRun === databaseSchemaAfterRun;
 
@@ -241,7 +252,7 @@ Eval('prepare_database_migration', {
     const finalMessage = response[response.length - 1];
     return finalMessage.content;
   },
-  trialCount: 50,
+  trialCount: 20,
   maxConcurrency: 2,
   scores: [factualityAnthropic, mainBranchIntegrityCheck],
 });

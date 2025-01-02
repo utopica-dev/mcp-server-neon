@@ -284,7 +284,7 @@ export const NEON_TOOLS = [
           - Temporary Branch Name (always include exact branch name)
           - Temporary Branch ID (always include exact ID)
           - Migration Result (include brief success/failure status)
-          
+
           Even if some fields are missing from the tool's response, use placeholders like "not provided" rather than omitting fields.
         </instructions>
 
