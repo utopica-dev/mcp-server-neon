@@ -75,3 +75,7 @@ cd mcp-client/ && NEON_API_KEY=... npm run start:mcp-server-neon
 # Testing
 
 To run the tests you need to setup the `.env` file according to the `.env.example` file.
+
+```bash
+npm run test
+```
