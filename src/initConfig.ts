@@ -87,7 +87,3 @@ export async function handleInit({
     ),
   );
 }
-
-export function handleStart() {
-  console.log('Starting MCP server...');
-}

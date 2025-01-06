@@ -3,7 +3,6 @@ import {
   CallToolResultSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { log } from 'console';
 import { neon } from '@neondatabase/serverless';
 import { neonClient } from './index.js';
 import crypto from 'crypto';
@@ -417,7 +416,6 @@ type ToolHandlers = {
 };
 
 async function handleListProjects(params: ListProjectsParams) {
-  log('Executing list_projects');
   const response = await neonClient.listProjects(params);
   if (response.status !== 200) {
     throw new Error(`Failed to list projects: ${response.statusText}`);
@@ -426,7 +424,6 @@ async function handleListProjects(params: ListProjectsParams) {
 }
 
 async function handleCreateProject(name?: string) {
-  log('Executing create_project');
   const response = await neonClient.createProject({
     project: { name },
   });
@@ -437,7 +434,6 @@ async function handleCreateProject(name?: string) {
 }
 
 async function handleDeleteProject(projectId: string) {
-  log('Executing delete_project');
   const response = await neonClient.deleteProject(projectId);
   if (response.status !== 200) {
     throw new Error(`Failed to delete project: ${response.statusText}`);
@@ -446,7 +442,6 @@ async function handleDeleteProject(projectId: string) {
 }
 
 async function handleDescribeProject(projectId: string) {
-  log('Executing describe_project');
   const projectBranches = await neonClient.listProjectBranches({
     projectId: projectId,
   });
@@ -476,7 +471,6 @@ async function handleRunSql({
   projectId: string;
   branchId?: string;
 }) {
-  log('Executing run_sql');
   const connectionString = await neonClient.getConnectionUri({
     projectId,
     role_name: NEON_ROLE_NAME,
@@ -500,7 +494,6 @@ async function handleRunSqlTransaction({
   projectId: string;
   branchId?: string;
 }) {
-  log('Executing run_sql_transaction');
   const connectionString = await neonClient.getConnectionUri({
     projectId,
     role_name: NEON_ROLE_NAME,
@@ -524,8 +517,6 @@ async function handleGetDatabaseTables({
   databaseName: string;
   branchId?: string;
 }) {
-  log('Executing get_database_tables');
-
   const connectionString = await neonClient.getConnectionUri({
     projectId,
     role_name: NEON_ROLE_NAME,
@@ -559,8 +550,6 @@ async function handleDescribeTableSchema({
   branchId?: string;
   tableName: string;
 }) {
-  log('Executing describe_table_schema');
-
   const result = await handleRunSql({
     sql: `SELECT 
     column_name, 
@@ -586,7 +575,6 @@ async function handleCreateBranch({
   projectId: string;
   branchName?: string;
 }) {
-  log('Executing create_branch');
   const response = await neonClient.createProjectBranch(projectId, {
     branch: {
       name: branchName,
@@ -615,7 +603,6 @@ async function handleDeleteBranch({
   projectId: string;
   branchId: string;
 }) {
-  log('Executing delete_branch');
   const response = await neonClient.deleteProjectBranch(projectId, branchId);
   return response.data;
 }
@@ -629,7 +616,6 @@ async function handleSchemaMigration({
   projectId: string;
   migrationSql: string;
 }) {
-  log('Executing schema_migration');
   const newBranch = await handleCreateBranch({ projectId });
 
   const result = await handleRunSqlTransaction({
@@ -654,7 +640,6 @@ async function handleSchemaMigration({
 }
 
 async function handleCommitMigration({ migrationId }: { migrationId: string }) {
-  log('Executing commit_migration');
   const migration = getMigrationFromMemory(migrationId);
   if (!migration) {
     throw new Error(`Migration not found: ${migrationId}`);
@@ -687,7 +672,6 @@ async function handleDescribeBranch({
   databaseName: string;
   branchId?: string;
 }) {
-  log('Executing describe_branch');
   const connectionString = await neonClient.getConnectionUri({
     projectId,
     role_name: NEON_ROLE_NAME,

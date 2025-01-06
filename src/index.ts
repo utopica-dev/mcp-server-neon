@@ -6,10 +6,9 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { log } from 'console';
 import { NEON_HANDLERS, NEON_TOOLS, ToolResult } from './tools.js';
 import { isNeonToolName } from './utils.js';
-import { handleInit, handleStart, parseArgs } from './initConfig.js';
+import { handleInit, parseArgs } from './initConfig.js';
 import { createApiClient } from '@neondatabase/api-client';
 import './polyfills.js';
 
@@ -30,7 +29,6 @@ if (command === 'init') {
 
 // "start" command from here
 // ----------------------------
-handleStart();
 export const neonClient = createApiClient({
   apiKey: neonApiKey,
 });
@@ -49,7 +47,6 @@ const server = new Server(
 
 // Handle list tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  log('Received list tools request');
   return { tools: NEON_TOOLS };
 });
 
@@ -58,7 +55,6 @@ server.setRequestHandler(
   CallToolRequestSchema,
   async (request): Promise<ToolResult> => {
     const toolName = request.params.name;
-    log('Received tool call:', toolName);
 
     try {
       if (isNeonToolName(toolName)) {
@@ -67,7 +63,6 @@ server.setRequestHandler(
 
       throw new Error(`Unknown tool: ${toolName}`);
     } catch (error) {
-      log('Error handling tool call:', error);
       return {
         content: [
           {

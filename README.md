@@ -64,6 +64,8 @@ The "Start" command accepts a migration and runs it in a new temporary branch. U
 
 # Development
 
+## Development with MCP CLI Client
+
 The easiest way to iterate on the MCP Server is using the `mcp-client/`. Learn more in `mcp-client/README.md`.
 
 ```bash
@@ -71,6 +73,16 @@ npm install
 npm run watch # You can keep this open.
 cd mcp-client/ && NEON_API_KEY=... npm run start:mcp-server-neon
 ```
+
+## Development with Claude Desktop
+
+```bash
+npm install
+npm run watch # You can keep this open.
+node dist/index.js init $NEON_API_KEY
+```
+
+Then, **restart Claude** each time you want to test changes.
 
 # Testing
 

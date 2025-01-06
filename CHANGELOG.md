@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.9 - 2025-01-06
 
 - Setups tests to the `prepare_database_migration` tool
 - Updates the `prepare_database_migration` tool to be more deterministic
+- Removes logging from the MCP server, following the [docs](https://modelcontextprotocol.io/docs/tools/debugging#implementing-logging)
 
 ## [0.1.8] - 2024-12-25
 
