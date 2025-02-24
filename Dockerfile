@@ -36,4 +36,4 @@ RUN npm ci --omit=dev
 ENV NODE_ENV=production
 
 # Specify the command to run the MCP server
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["node", "dist/index.js", "start", "$NEON_API_KEY"]
