@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@neondatabase/mcp-server-neon)](https://www.npmjs.com/package/@neondatabase/mcp-server-neon)
 [![npm downloads](https://img.shields.io/npm/dt/@neondatabase/mcp-server-neon)](https://www.npmjs.com/package/@neondatabase/mcp-server-neon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![smithery badge](https://smithery.ai/badge/neon)](https://smithery.ai/protocol/neon)
+[![smithery badge](https://smithery.ai/badge/neon)](https://smithery.ai/server/neon)
 
 Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Neon](https://neon.tech).
 
@@ -17,7 +17,7 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 
 ### Installing via Smithery
 
-To install Neon MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/protocol/neon):
+To install Neon MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/neon):
 
 ```bash
 npx -y @smithery/cli install neon --client claude
@@ -70,6 +70,7 @@ The easiest way to iterate on the MCP Server is using the `mcp-client/`. Learn m
 
 ```bash
 npm install
+npm run build
 npm run watch # You can keep this open.
 cd mcp-client/ && NEON_API_KEY=... npm run start:mcp-server-neon
 ```
@@ -78,6 +79,7 @@ cd mcp-client/ && NEON_API_KEY=... npm run start:mcp-server-neon
 
 ```bash
 npm install
+npm run build
 npm run watch # You can keep this open.
 node dist/index.js init $NEON_API_KEY
 ```
