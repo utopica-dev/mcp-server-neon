@@ -20,6 +20,7 @@
     "watch": "tsc-watch --onSuccess \"chmod 755 dist/index.js\"",
     "inspector": "npx @modelcontextprotocol/inspector dist/index.js",
     "format": "prettier --write .",
+    "prerelease": "npm run build",
     "prepublishOnly": "bun scripts/before-publish.ts",
     "test": "npx braintrust eval src/tools-evaluations"
   },
