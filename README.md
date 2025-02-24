@@ -70,6 +70,7 @@ The easiest way to iterate on the MCP Server is using the `mcp-client/`. Learn m
 
 ```bash
 npm install
+npm run build
 npm run watch # You can keep this open.
 cd mcp-client/ && NEON_API_KEY=... npm run start:mcp-server-neon
 ```
@@ -78,6 +79,7 @@ cd mcp-client/ && NEON_API_KEY=... npm run start:mcp-server-neon
 
 ```bash
 npm install
+npm run build
 npm run watch # You can keep this open.
 node dist/index.js init $NEON_API_KEY
 ```
