@@ -10,8 +10,8 @@ startCommand:
     properties:
       neonApiKey:
         type: string
-        description: The API key for accessing the Neon server.
+        description: The API key for accessing the Neon. You can generate one through the Neon console.
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({command: 'node', args: ['dist/index.js', 'init', config.neonApiKey]})
+    (config) => ({command: 'node', args: ['dist/index.js', 'start', config.neonApiKey]})
