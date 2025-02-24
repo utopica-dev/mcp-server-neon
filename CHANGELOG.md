@@ -1,5 +1,9 @@
 # Changelog
 
+# 0.2.0 - 2025-02-24
+
+- Add [Smithery](https://smithery.ai/server/neon) deployment config
+
 ## 0.1.9 - 2025-01-06
 
 - Setups tests to the `prepare_database_migration` tool
