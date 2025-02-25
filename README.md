@@ -35,6 +35,12 @@ npx -y @smithery/cli install neon --client claude
 2. Restart Claude Desktop
 3. You should now be able to try a simple command such as `List me all my Neon projects`
 
+## Guides
+
+- [Claude Desktop with Neon MCP Server](https://neon.tech/guides/neon-mcp-server)
+- [Cline with Neon MCP Server](https://neon.tech/guides/cline-mcp-neon)
+- [Windsurf with Neon MCP Server](https://neon.tech/guides/windsurf-mcp-neon)
+
 # Features
 
 ## Supported Tools
