@@ -1,10 +1,16 @@
 # Changelog
 
-# 0.2.0 - 2025-02-24
+## [0.2.1] - 2025-02-25
+
+- Fixes a bug in the `list_projects` tool
+- Update the `@modelcontextprotocol/sdk` to the latest version
+- Use `zod` to validate tool input schemas
+
+## [0.2.0] - 2025-02-24
 
 - Add [Smithery](https://smithery.ai/server/neon) deployment config
 
-## 0.1.9 - 2025-01-06
+## [0.1.9] - 2025-01-06
 
 - Setups tests to the `prepare_database_migration` tool
 - Updates the `prepare_database_migration` tool to be more deterministic

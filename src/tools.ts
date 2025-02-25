@@ -1,213 +1,68 @@
-import {
-  CallToolRequest,
-  CallToolResultSchema,
-  Tool,
-} from '@modelcontextprotocol/sdk/types.js';
 import { neon } from '@neondatabase/serverless';
 import { neonClient } from './index.js';
 import crypto from 'crypto';
 import { getMigrationFromMemory, persistMigrationToMemory } from './state.js';
 import { EndpointType, ListProjectsParams } from '@neondatabase/api-client';
 import { DESCRIBE_DATABASE_STATEMENTS, splitSqlStatements } from './utils.js';
-import { z } from 'zod';
+import { listProjectsInputSchema, nodeVersionInputSchema, createProjectInputSchema, deleteProjectInputSchema, describeProjectInputSchema, runSqlInputSchema, runSqlTransactionInputSchema, describeTableSchemaInputSchema, getDatabaseTablesInputSchema, createBranchInputSchema, prepareDatabaseMigrationInputSchema, completeDatabaseMigrationInputSchema, describeBranchInputSchema, deleteBranchInputSchema } from './toolsSchema.js';
+import { ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 const NEON_ROLE_NAME = 'neondb_owner';
 const NEON_DEFAULT_DATABASE_NAME = 'neondb';
+
+
+// Define the tools with their configurations
 export const NEON_TOOLS = [
   {
     name: '__node_version' as const,
     description: `Get the Node.js version used by the MCP server`,
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
+    inputSchema: nodeVersionInputSchema
   },
   {
     name: 'list_projects' as const,
     description: `List all Neon projects in your account.`,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        cursor: {
-          type: 'string',
-          description:
-            'Specify the cursor value from the previous response to retrieve the next batch of projects.',
-        },
-        limit: {
-          type: 'number',
-          description:
-            'Specify a value from 1 to 400 to limit number of projects in the response.',
-        },
-        search: {
-          type: 'string',
-          description:
-            'Search by project name or id. You can specify partial name or id values to filter results.',
-        },
-        orgId: {
-          type: 'string',
-          description: 'Search for projects by org_id.',
-        },
-      },
-    },
+    inputSchema: listProjectsInputSchema
   },
   {
     name: 'create_project' as const,
     description: 'Create a new Neon project',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'An optional name of the project to create.',
-        },
-      },
-    },
+    inputSchema: createProjectInputSchema
   },
   {
     name: 'delete_project' as const,
     description: 'Delete a Neon project',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to delete',
-        },
-      },
-      required: ['projectId'],
-    },
+    inputSchema: deleteProjectInputSchema
   },
   {
     name: 'describe_project' as const,
     description: 'Describes a Neon project',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to describe',
-        },
-      },
-      required: ['projectId'],
-    },
+    inputSchema: describeProjectInputSchema
   },
   {
     name: 'run_sql' as const,
     description: 'Execute a single SQL statement against a Neon database',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        sql: { type: 'string', description: 'The SQL query to execute' },
-        databaseName: {
-          type: 'string',
-          description: 'The name of the database to execute the query against',
-        },
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to execute the query against',
-        },
-        branchId: {
-          type: 'string',
-          description:
-            'An optional ID of the branch to execute the query against',
-        },
-      },
-      required: ['sql', 'databaseName', 'projectId'],
-    },
+    inputSchema: runSqlInputSchema
   },
   {
     name: 'run_sql_transaction' as const,
     description:
       'Execute a SQL transaction against a Neon database, should be used for multiple SQL statements',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        sqlStatements: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'The SQL statements to execute',
-        },
-        databaseName: {
-          type: 'string',
-          description: 'The name of the database to execute the query against',
-        },
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to execute the query against',
-        },
-        branchId: {
-          type: 'string',
-          description:
-            'An optional ID of the branch to execute the query against',
-        },
-      },
-      required: ['sqlStatements', 'databaseName', 'projectId'],
-    },
+    inputSchema: runSqlTransactionInputSchema
   },
-
   {
     name: 'describe_table_schema' as const,
     description: 'Describe the schema of a table in a Neon database',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        tableName: { type: 'string', description: 'The name of the table' },
-        databaseName: {
-          type: 'string',
-          description: 'The name of the database to get the table schema from',
-        },
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to execute the query against',
-        },
-        branchId: {
-          type: 'string',
-          description:
-            'An optional ID of the branch to execute the query against',
-        },
-      },
-      required: ['tableName', 'databaseName', 'projectId'],
-    },
+    inputSchema: describeTableSchemaInputSchema
   },
   {
     name: 'get_database_tables' as const,
     description: 'Get all tables in a Neon database',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project',
-        },
-        branchId: {
-          type: 'string',
-          description: 'An optional ID of the branch',
-        },
-        databaseName: {
-          type: 'string',
-          description: 'The name of the database',
-        },
-      },
-      required: ['projectId', 'databaseName'],
-    },
+    inputSchema: getDatabaseTablesInputSchema
   },
   {
     name: 'create_branch' as const,
     description: 'Create a branch in a Neon project',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to create the branch in',
-        },
-        branchName: {
-          type: 'string',
-          description: 'An optional name for the branch',
-        },
-      },
-      required: ['projectId'],
-    },
+    inputSchema: createBranchInputSchema
   },
   {
     name: 'prepare_database_migration' as const,
@@ -335,88 +190,41 @@ export const NEON_TOOLS = [
     Important: After a failed retry, you must terminate the current flow completely. Do not attempt to use alternative tools or workarounds.
   </error_handling>
           `,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        migrationSql: {
-          type: 'string',
-          description: 'The SQL to execute to create the migration',
-        },
-        databaseName: {
-          type: 'string',
-          description: 'The name of the database to execute the query against',
-        },
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project to execute the query against',
-        },
-      },
-      required: ['migrationSql', 'databaseName', 'projectId'],
-    },
+    inputSchema: prepareDatabaseMigrationInputSchema
   },
   {
     name: 'complete_database_migration' as const,
     description:
       'Complete a database migration when the user confirms the migration is ready to be applied to the main branch. This tool also lets the client know that the temporary branch created by the prepare_database_migration tool has been deleted.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        migrationId: { type: 'string' },
-      },
-      required: ['migrationId'],
-    },
+    inputSchema: completeDatabaseMigrationInputSchema
   },
   {
     name: 'describe_branch' as const,
     description:
       'Get a tree view of all objects in a branch, including databases, schemas, tables, views, and functions',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project',
-        },
-        branchId: {
-          type: 'string',
-          description: 'An ID of the branch to describe',
-        },
-        databaseName: {
-          type: 'string',
-          description: 'The name of the database',
-        },
-      },
-      required: ['projectId', 'databaseName', 'branchId'],
-    },
+    inputSchema: describeBranchInputSchema
   },
   {
     name: 'delete_branch' as const,
     description: 'Delete a branch from a Neon project',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        projectId: {
-          type: 'string',
-          description: 'The ID of the project containing the branch',
-        },
-        branchId: {
-          type: 'string',
-          description: 'The ID of the branch to delete',
-        },
-      },
-      required: ['projectId', 'branchId'],
-    },
+    inputSchema: deleteBranchInputSchema
   },
-] satisfies Array<Tool>;
-export type NeonToolName = (typeof NEON_TOOLS)[number]['name'];
+];
 
-export type ToolResult = z.infer<typeof CallToolResultSchema>;
-type ToolHandlers = {
-  [K in NeonToolName]: (request: CallToolRequest) => Promise<ToolResult>;
+// Extract the tool names as a union type
+type NeonToolName = typeof NEON_TOOLS[number]['name'];
+
+
+// Create a type for the tool handlers that directly maps each tool to its appropriate input schema
+export type ToolHandlers = {
+  [K in NeonToolName]: ToolCallback<Extract<typeof NEON_TOOLS[number], { name: K }>['inputSchema']['shape']>
 };
 
+
 async function handleListProjects(params: ListProjectsParams) {
-  const response = await neonClient.listProjects(params);
+  const response = await neonClient.listProjects({
+    limit: 100,
+  });
   if (response.status !== 200) {
     throw new Error(`Failed to list projects: ${response.statusText}`);
   }
@@ -692,29 +500,16 @@ export const NEON_HANDLERS: ToolHandlers = {
     content: [{ type: 'text', text: process.version }],
   }),
 
-  list_projects: async (request) => {
-    const { cursor, limit, search, orgId } = request.params.arguments as {
-      cursor?: string;
-      limit?: number;
-      search?: string;
-      orgId?: string;
-    };
-
-    const projects = await handleListProjects({
-      cursor,
-      limit,
-      search,
-      org_id: orgId,
-    });
+  list_projects: async (params) => {
+    const projects = await handleListProjects(params ?? {});
 
     return {
       content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }],
     };
   },
 
-  create_project: async (request) => {
-    const { name } = request.params.arguments as { name?: string };
-    const result = await handleCreateProject(name);
+  create_project: async (params) => {
+    const result = await handleCreateProject(params.name);
 
     return {
       content: [
@@ -732,9 +527,8 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  delete_project: async (request) => {
-    const { projectId } = request.params.arguments as { projectId: string };
-    await handleDeleteProject(projectId);
+  delete_project: async (params) => {
+    await handleDeleteProject(params.projectId);
 
     return {
       content: [
@@ -742,16 +536,15 @@ export const NEON_HANDLERS: ToolHandlers = {
           type: 'text',
           text: [
             'Project deleted successfully.',
-            `Project ID: ${projectId}`,
+            `Project ID: ${params.projectId}`,
           ].join('\n'),
         },
       ],
     };
   },
 
-  describe_project: async (request) => {
-    const { projectId } = request.params.arguments as { projectId: string };
-    const result = await handleDescribeProject(projectId);
+  describe_project: async (params) => {
+    const result = await handleDescribeProject(params.projectId);
 
     return {
       content: [
@@ -771,38 +564,24 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  run_sql: async (request) => {
-    const { sql, databaseName, projectId, branchId } = request.params
-      .arguments as {
-      sql: string;
-      databaseName: string;
-      projectId: string;
-      branchId?: string;
-    };
+  run_sql: async (params) => {
     const result = await handleRunSql({
-      sql,
-      databaseName,
-      projectId,
-      branchId,
+      sql: params.sql,
+      databaseName: params.databaseName,
+      projectId: params.projectId,
+      branchId: params.branchId,
     });
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
 
-  run_sql_transaction: async (request) => {
-    const { sqlStatements, databaseName, projectId, branchId } = request.params
-      .arguments as {
-      sqlStatements: Array<string>;
-      databaseName: string;
-      projectId: string;
-      branchId?: string;
-    };
+  run_sql_transaction: async (params) => {
     const result = await handleRunSqlTransaction({
-      sqlStatements,
-      databaseName,
-      projectId,
-      branchId,
+      sqlStatements: params.sqlStatements,
+      databaseName: params.databaseName,
+      projectId: params.projectId,
+      branchId: params.branchId,
     });
 
     return {
@@ -810,35 +589,23 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  describe_table_schema: async (request) => {
-    const { tableName, databaseName, projectId, branchId } = request.params
-      .arguments as {
-      tableName: string;
-      databaseName: string;
-      projectId: string;
-      branchId?: string;
-    };
+  describe_table_schema: async (params) => {
     const result = await handleDescribeTableSchema({
-      tableName,
-      databaseName,
-      projectId,
-      branchId,
+      tableName: params.tableName,
+      databaseName: params.databaseName,
+      projectId: params.projectId,
+      branchId: params.branchId,
     });
     return {
       content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
     };
   },
 
-  get_database_tables: async (request) => {
-    const { projectId, branchId, databaseName } = request.params.arguments as {
-      projectId: string;
-      branchId?: string;
-      databaseName: string;
-    };
+  get_database_tables: async (params) => {
     const result = await handleGetDatabaseTables({
-      projectId,
-      branchId,
-      databaseName,
+      projectId: params.projectId,
+      branchId: params.branchId,
+      databaseName: params.databaseName,
     });
 
     return {
@@ -851,15 +618,10 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  create_branch: async (request) => {
-    const { projectId, branchName } = request.params.arguments as {
-      projectId: string;
-      branchName?: string;
-    };
-
+  create_branch: async (params) => {
     const result = await handleCreateBranch({
-      projectId,
-      branchName,
+      projectId: params.projectId,
+      branchName: params.branchName,
     });
 
     return {
@@ -878,18 +640,11 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  prepare_database_migration: async (request) => {
-    const { migrationSql, databaseName, projectId } = request.params
-      .arguments as {
-      migrationSql: string;
-      databaseName: string;
-      projectId: string;
-    };
-
+  prepare_database_migration: async (params) => {
     const result = await handleSchemaMigration({
-      migrationSql,
-      databaseName,
-      projectId,
+      migrationSql: params.migrationSql,
+      databaseName: params.databaseName,
+      projectId: params.projectId,
     });
 
     return {
@@ -919,9 +674,8 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  complete_database_migration: async (request) => {
-    const { migrationId } = request.params.arguments as { migrationId: string };
-    const result = await handleCommitMigration({ migrationId });
+  complete_database_migration: async (params) => {
+    const result = await handleCommitMigration({ migrationId: params.migrationId });
 
     return {
       content: [
@@ -940,17 +694,11 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  describe_branch: async (request) => {
-    const { projectId, branchId, databaseName } = request.params.arguments as {
-      projectId: string;
-      branchId?: string;
-      databaseName: string;
-    };
-
+  describe_branch: async (params) => {
     const result = await handleDescribeBranch({
-      projectId,
-      branchId,
-      databaseName,
+      projectId: params.projectId,
+      branchId: params.branchId,
+      databaseName: params.databaseName,
     });
 
     return {
@@ -965,15 +713,10 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  delete_branch: async (request) => {
-    const { projectId, branchId } = request.params.arguments as {
-      projectId: string;
-      branchId: string;
-    };
-
+  delete_branch: async (params) => {
     await handleDeleteBranch({
-      projectId,
-      branchId,
+      projectId: params.projectId,
+      branchId: params.branchId,
     });
 
     return {
@@ -982,8 +725,8 @@ export const NEON_HANDLERS: ToolHandlers = {
           type: 'text',
           text: [
             'Branch deleted successfully.',
-            `Project ID: ${projectId}`,
-            `Branch ID: ${branchId}`,
+            `Project ID: ${params.projectId}`,
+            `Branch ID: ${params.branchId}`,
           ].join('\n'),
         },
       ],
