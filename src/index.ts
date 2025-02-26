@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { NEON_HANDLERS, NEON_TOOLS } from './tools.js';
+import { NEON_HANDLERS, NEON_TOOLS, ToolHandler } from './tools.js';
 import { handleInit, parseArgs } from './initConfig.js';
 import { createApiClient } from '@neondatabase/api-client';
 import './polyfills.js';
@@ -44,8 +44,8 @@ NEON_TOOLS.forEach((tool) => {
   server.tool(
     tool.name,
     tool.description,
-    tool.inputSchema.shape,
-    handler
+    { params: tool.inputSchema },
+    handler as ToolHandler<typeof tool.name>
   );
 });
 

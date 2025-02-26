@@ -214,17 +214,15 @@ export const NEON_TOOLS = [
 // Extract the tool names as a union type
 type NeonToolName = typeof NEON_TOOLS[number]['name'];
 
+export type ToolHandler<T extends NeonToolName> = ToolCallback<{ params: Extract<typeof NEON_TOOLS[number], { name: T }>['inputSchema'] }>;
 
 // Create a type for the tool handlers that directly maps each tool to its appropriate input schema
-export type ToolHandlers = {
-  [K in NeonToolName]: ToolCallback<Extract<typeof NEON_TOOLS[number], { name: K }>['inputSchema']['shape']>
+type ToolHandlers = {
+  [K in NeonToolName]: ToolHandler<K>
 };
 
-
 async function handleListProjects(params: ListProjectsParams) {
-  const response = await neonClient.listProjects({
-    limit: 100,
-  });
+  const response = await neonClient.listProjects(params);
   if (response.status !== 200) {
     throw new Error(`Failed to list projects: ${response.statusText}`);
   }
@@ -494,21 +492,21 @@ async function handleDescribeBranch({
   return response;
 }
 
-export const NEON_HANDLERS: ToolHandlers = {
+export const NEON_HANDLERS = {
   // for debugging reasons.
-  __node_version: async (request) => ({
+  __node_version: async () => ({
     content: [{ type: 'text', text: process.version }],
   }),
 
-  list_projects: async (params) => {
-    const projects = await handleListProjects(params ?? {});
+  list_projects: async ({ params }) => {
+    const projects = await handleListProjects(params);
 
     return {
       content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }],
     };
   },
 
-  create_project: async (params) => {
+  create_project: async ({ params }) => {
     const result = await handleCreateProject(params.name);
 
     return {
@@ -527,7 +525,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  delete_project: async (params) => {
+  delete_project: async ({ params }) => {
     await handleDeleteProject(params.projectId);
 
     return {
@@ -543,7 +541,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  describe_project: async (params) => {
+  describe_project: async ({ params }) => {
     const result = await handleDescribeProject(params.projectId);
 
     return {
@@ -564,7 +562,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  run_sql: async (params) => {
+  run_sql: async ({ params }) => {
     const result = await handleRunSql({
       sql: params.sql,
       databaseName: params.databaseName,
@@ -576,7 +574,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  run_sql_transaction: async (params) => {
+  run_sql_transaction: async ({ params }) => {
     const result = await handleRunSqlTransaction({
       sqlStatements: params.sqlStatements,
       databaseName: params.databaseName,
@@ -589,7 +587,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  describe_table_schema: async (params) => {
+  describe_table_schema: async ({ params }) => {
     const result = await handleDescribeTableSchema({
       tableName: params.tableName,
       databaseName: params.databaseName,
@@ -601,7 +599,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  get_database_tables: async (params) => {
+  get_database_tables: async ({ params }) => {
     const result = await handleGetDatabaseTables({
       projectId: params.projectId,
       branchId: params.branchId,
@@ -618,7 +616,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  create_branch: async (params) => {
+  create_branch: async ({ params }) => {
     const result = await handleCreateBranch({
       projectId: params.projectId,
       branchName: params.branchName,
@@ -640,7 +638,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  prepare_database_migration: async (params) => {
+  prepare_database_migration: async ({ params }) => {
     const result = await handleSchemaMigration({
       migrationSql: params.migrationSql,
       databaseName: params.databaseName,
@@ -674,7 +672,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  complete_database_migration: async (params) => {
+  complete_database_migration: async ({ params }) => {
     const result = await handleCommitMigration({ migrationId: params.migrationId });
 
     return {
@@ -694,7 +692,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  describe_branch: async (params) => {
+  describe_branch: async ({ params }) => {
     const result = await handleDescribeBranch({
       projectId: params.projectId,
       branchId: params.branchId,
@@ -713,7 +711,7 @@ export const NEON_HANDLERS: ToolHandlers = {
     };
   },
 
-  delete_branch: async (params) => {
+  delete_branch: async ({ params }) => {
     await handleDeleteBranch({
       projectId: params.projectId,
       branchId: params.branchId,
@@ -732,4 +730,4 @@ export const NEON_HANDLERS: ToolHandlers = {
       ],
     };
   },
-};
+} satisfies ToolHandlers;

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.2] - 2025-02-26
+
+- Fixed a bug in the `list_projects` tool when passing no params
+- Added a `params` property to all the tools input schemas
+
 ## [0.2.1] - 2025-02-25
 
 - Fixes a bug in the `list_projects` tool
